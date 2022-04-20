@@ -1,2 +1,2 @@
 # HMDelimit
-This repo is meant to prevent the type of data loss that I have previously incurred while using git through VSCode.
+This repo holds the python source files for a species delimitation pipeline based on the work of Leache et al 2019.
