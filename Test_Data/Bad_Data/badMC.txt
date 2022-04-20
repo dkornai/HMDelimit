@@ -1,0 +1,24 @@
+alignment file = D_L10_align.txt
+Imap file = bad_imap.txt
+
+BPP A01 starting phylogeny inference control file = asd
+starting tree =  )
+
+BPP A11 starting delimitation control file = 
+
+HM guide tree =  ((A, B, C), D);
+BPP A00 HM parameter inference control file =  Pcontrol2_A00.ctl
+
+HM mode = merg
+HM GDI threshold = 
+HM generation threshold = 
+HM mutation rate / site / generation = #0.00000000305 # reported in some lizard paper
+HM decision parameters = age
+
+thetaprior= 3 0.004 e
+tauprior= 3 0.008
+finetune = 1: 0.01 0.004 0.0003 0.0001 .02
+threads = 2 1 4
+burnin =     5000
+nsample = 8000   
+sampfreq = 2
