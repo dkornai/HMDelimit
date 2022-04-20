@@ -45,14 +45,17 @@
 # for criteria in HM_decision_criteria:
 #     print(criteria, criteriaMatch(test_dict_for_criteria, hm_param = {"HM_decision":criteria}))
 
+# from helper_functions import bppcfile_to_dict
+# print(bppcfile_to_dict("Test_Data/Lizard_2010/D_L10_A11.ctl"))
+
 # # pretty_Table testing
 # from helper_functions import pretty_Table
 # column_1 = ["1", "23", "456", "0", "?"]
-# column_2 = ["asd", "asdasd", "asdaa", "asd", "a"]
-# column_3 = ["True", "False", "True", "False", "?"]
+# column_2 = ["asdf", "asdasd", "asdaa", "asdff", "a"]
+# column_3 = ["Trueasddd", "False6", "True55555", "False", "?"]
 # table = [column_1, column_2, column_3]
 # colnames = ["NUMBER", "LETTER", "BOOL"]
-# pretty_Table(table, colnames)
+# pretty_Table(table, colnames, width_limit=[1, 4])
 
 # from proposal_module import HMproposal
 # from helper_functions import Imap_to_IndPop_Dict
