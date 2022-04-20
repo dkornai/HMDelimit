@@ -265,9 +265,6 @@ def decisionUserFeedback(
         decision:               list[list[Species_name]]
                         ):
 
-    print("@@@@@@@@@")
-    print(hm_param)
-
     # collect if the program is working in merge or split mode
     mode = hm_param['mode'].upper()
     gdi_verb = "<"

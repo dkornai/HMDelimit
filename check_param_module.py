@@ -93,7 +93,7 @@ def check_Master_Control(
 
     ## MAKE FINAL DECISION TO PROCEED OR NOT
     # if no immediate errors are found, return which parameters are provided and which are empty
-    print("SUMMARIZED RESULTS:")
+    print("\n\tSUMMARIZED RESULTS:")
     error_n = sum(i < 0 for i in list(par_check.values()))
     if error_n == 0:
         print(f"\n\t[*] No errors found during inital check of: '{input_control_file}'")
