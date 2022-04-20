@@ -1,12 +1,11 @@
 ## DEPENDENCDIES
-
 # HELPER FUNCTION DEPENDENCIES
 from helper_functions import pretty
 from helper_functions import pretty_Table
 from helper_functions import read_MasterControl
 
 # CHECKING FUNCTION DEPENDENCIES
-from checking_functions import assert_Imap_Seq_compat, check_BPP_ctl_filetype, check_BPP_mode, check_SandT_Imap_MSA_compat, check_Threads_nloci_compat, check_nloci_MSA_compat
+from checking_functions import assert_Imap_Seq_compat
 from checking_functions import check_Newick
 from checking_functions import check_Numeric
 from checking_functions import check_Tauprior
@@ -14,7 +13,7 @@ from checking_functions import check_Thetaprior
 from checking_functions import check_GDI_params
 from checking_functions import check_Finetune
 from checking_functions import check_Threads
-from checking_functions import check_File
+from checking_functions import check_BPP_mode
 from checking_functions import check_Imap_Seq_compat
 from checking_functions import check_Imap_filetype
 from checking_functions import check_MSA_filetype
@@ -24,16 +23,18 @@ from checking_functions import check_Print
 from checking_functions import check_SandT_popsizes
 from checking_functions import check_Imap_Tree_compat
 from checking_functions import check_ValueIsFrom
-from checking_functions import check_speciesdelimitation
+from checking_functions import check_BPP_ctl_filetype
+from checking_functions import check_nloci_MSA_compat
+from checking_functions import check_Threads_nloci_compat
+from checking_functions import check_SandT_Imap_MSA_compat
 
-
-# BPP CONTROL FILE READING FUNCTIONS
-from bpp_cfile_module import get_user_BPP_param
-
-# DATA DEPENDENCIES
+## DATA DEPENDENCIES
 from data_dicts import master_Control_feedback
+from data_dicts import BPP_Control_feedback
+from data_dicts import col_print
 
-from custom_types import BPP_control_file
+## TYPE HINTS
+from custom_types import BPP_control_dict, BPP_control_file, BPP_mode
 
 ## MASTER CONTROL CHECKING FUNCTION
 
@@ -41,8 +42,9 @@ from custom_types import BPP_control_file
 def check_Master_Control(
         input_control_file: BPP_control_file
                         ):
+
     # begin by checking if the file can be loaded at all
-    print("\n-- INITAL CHECK OF MASTER CONTROL FILE (MCF) PARAMETERS --\n")
+    print(f"\n{col_print.BLUE}INITAL CHECK OF MASTER CONTROL FILE (MCF) PARAMETERS{col_print.RESETC}\n")
     
     # check that master control file is present and only contains calls to known parameters
     check_Master_control_filetype(input_control_file)
@@ -74,7 +76,7 @@ def check_Master_Control(
     par_check['thetaprior']     = check_Thetaprior(param['thetaprior'])
     par_check['tauprior']       = check_Tauprior(param['tauprior'])
     par_check['finetune']       = check_Finetune(param['finetune'])
-    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "i", min = 1, max = 100)
+    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "i", min = 0, max = 100)
     par_check["nsample"]        = check_Numeric(param["nsample"], "i", min = 1000)
     par_check["burnin"]         = check_Numeric(param["burnin"], "i", min = 200)
     par_check['threads']        = check_Threads(param['threads'])
@@ -102,13 +104,16 @@ def check_Master_Control(
         print("\t\t\n-- EXITING PROGRAM --")
         exit()
 
-mc_dict = read_MasterControl(input_control_file)
-param, sourcedict = get_user_BPP_param(mc_dict, BPP_mode)
 
 # check if the user supplied parameters to various BPP modes are correctly specified
-def check_BPP_cfile(param, sourcedict, BPP_mode):
+def check_BPP_cfile (
+        param:              BPP_control_dict, 
+        sourcedict:         dict, 
+        BPP_mode:           BPP_mode
+                    ) ->    bool:
+
     mode_desc = {"A01":"starting phylogeny inference", "A11": "starting delimitation inference", "A00":"hierarchical method"}
-    print(f"-- CHECKING USER SUPPLIED BPP {BPP_mode} PARAMETERS USED DURING {mode_desc[BPP_mode].upper()} --")
+    print(f"{col_print.BLUE}\nCHECKING USER SUPPLIED BPP {BPP_mode} PARAMETERS USED DURING {mode_desc[BPP_mode].upper()}{col_print.RESETC}\n")
 
     # prepare empty checking dict, the popsizes row is ignored because that is only an internal row of the pipeline
     par_check = {key:0 for key in param if key != "popsizes"} ## ADD REMOVAL OF UNSUPPLIED PARAMETERS
@@ -137,7 +142,7 @@ def check_BPP_cfile(param, sourcedict, BPP_mode):
     par_check['seed']           = check_Numeric(param["seed"], "i", min = -10000)
     par_check['print']          = check_Print(param["print"])
     par_check["burnin"]         = check_Numeric(param["burnin"], "i", min = 200) 
-    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "i", min = 1, max = 100)
+    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "i", min = 0, max = 100)
     par_check["nsample"]        = check_Numeric(param["nsample"], "i", min = 1000) 
     par_check['threads']        = check_Threads(param['threads'])
 
@@ -150,7 +155,6 @@ def check_BPP_cfile(param, sourcedict, BPP_mode):
 
 
     ## PRINT RESULTS OF INITIAL MISSPECIFICATION CHECKING
-    print("RESULTS:\n")
     par_names = [par_name for par_name in par_check if param[par_name] != "?"]
     source = [sourcedict[par_name] for par_name in par_names]
     values = [param[par_name] for par_name in par_names]
@@ -171,17 +175,17 @@ def check_BPP_cfile(param, sourcedict, BPP_mode):
     ## DEEP COMPATIBILITY CHECKING
         # only attempt deep compatibility checks if the required paramters are present
     if par_check["Imapfile"] and (par_check["newick"] or par_check["seqfile"]):
-        print("DEEP COMPATIBILITY CHECKING")
+        print("\n\tDEEP COMPATIBILITY CHECKING\n")
         # check that the imap file and the MSA file refer to the same set of individuals
         par_check["imap_seq_compat"]         = check_Imap_Seq_compat(par_check, param["Imapfile"], param["seqfile"])
         # check that the imap file and the newick tree refer to the same set of populations
         par_check["imap_tree_compat"]        = check_Imap_Tree_compat(par_check, param["Imapfile"], param["newick"])
         # check that the population names and sizes in the species&tree row match the MSA and the Imap
-        par_check["s_and_t_imap_msa_compat"] = check_SandT_Imap_MSA_compat(par_check, param["species&tree"], param["popsizes"], param["Imapfile"], param["alignmentfile"])
+        par_check["s_and_t_imap_msa_compat"] = check_SandT_Imap_MSA_compat(par_check, param["species&tree"], param["popsizes"], param["Imapfile"], param["seqfile"])
 
 
     ## MAKE FINAL DECISION TO PROCEED OR NOT
-    print("SUMMARIZED RESULTS:")
+    print("\tSUMMARIZED RESULTS:")
     error_n = sum(i < 0 for i in list(par_check.values()))
     if error_n == 0:
         correctly_specified = True
@@ -191,17 +195,20 @@ def check_BPP_cfile(param, sourcedict, BPP_mode):
     # if erroneous parameters are found, halt execution immediately
     elif error_n > 0:
         correctly_specified = False
-        print(f"\n{error_n} [X] ERROR(S) FOUND IN: '{input_control_file}'. PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
-        print("\t\t\n-- EXITING PROGRAM --")
+        print(f"\n{error_n} [X] ERROR(S) FOUND IN USER SUPPLIED PARAMETERS! PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
     
     return correctly_specified
 
 # check that the specified parameters for A01 and A11 are not in conflict
-def check_A01_to_A11_compatibility(A01_parameters, A11_parameters):
-    print("\n-- CHECKING IF A01 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A11 STAGE --\n")
+def check_A01_to_A11_compatibility  (
+        A01_parameters:                     BPP_control_dict, 
+        A11_parameters:                     BPP_control_dict,
+                                    ) ->    bool:
+
+    print(f"\n{col_print.BLUE}CHECKING IF A01 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A11 STAGE{col_print.RESETC}\n")
     
     # this is only the case if the Imap file is identical
-    if A01_parameters["Imapfile"] == A11_parameters["imapfile"]:
+    if A01_parameters["Imapfile"] == A11_parameters["Imapfile"]:
         compatible = True
         print("\t[*] The Imap for the A01 and A11 stages is identical, compatibility is guaranteed!")
 
@@ -215,8 +222,12 @@ def check_A01_to_A11_compatibility(A01_parameters, A11_parameters):
     return compatible
 
 # check that the specified parameters for A11 and A00 are not in conflict
-def check_A01_to_A11_compatibility(A11_parameters, A00_parameters):
-    print("\n-- CHECKING IF A11 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A00 STAGE --\n")
+def check_A11_to_A00_compatibility  (
+        A11_parameters:                     BPP_control_dict, 
+        A00_parameters:                     BPP_control_dict
+                                    ) ->    bool:
+
+    print(f"\n{col_print.BLUE}CHECKING IF A11 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A00 STAGE{col_print.RESETC}\n")
 
     A11_msa_checked = check_MSA_filetype(A11_parameters["seqfile"])
     if A11_msa_checked < 1:

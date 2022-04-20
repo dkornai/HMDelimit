@@ -284,7 +284,7 @@ def read_MasterControl  (
     mc_lines = read_filter_comments(input_mc_file)
 
     # try to find lines that match the keyphrases of the parameters
-    control_file_params = {read_MCF_param(mc_lines, MCF_param_dict[param]) for param in MCF_param_dict}
+    control_file_params = {param:read_MCF_param(mc_lines, MCF_param_dict[param]) for param in MCF_param_dict}
     
     return control_file_params 
 
@@ -323,8 +323,8 @@ def get_HM_parameters   (
 
 # return a properly filtered BioPython MSA object when pointed to a valid alignment file
 def alignfile_to_MSA(
-        align_file:Phylip_MSA_file
-                    ) -> list[MultipleSeqAlignment]:
+        align_file:         Phylip_MSA_file
+                    ) ->    list[MultipleSeqAlignment]:
 
     align_raw = readLines(align_file)
     
@@ -432,7 +432,6 @@ def bppcfile_to_dict(
 
     # strip the comments to avoid potential confusion of downstream modules
     lines = read_filter_comments(input_cfile)
-    print(lines)
     buf = io.StringIO("\n".join(lines))
 
     # import the control file to a dataframe
@@ -441,7 +440,6 @@ def bppcfile_to_dict(
     # rename columns, convert every cell to text, and remove trailing and leading whitespaces
     df.rename(columns={0: "par", 1: "value"}, inplace=True)
     df = df.applymap(lambda x: stripall(x))
-    print(df)
 
     # if present, reconfigure the rows under "species&tree" to move the required data into the value column
     try:
@@ -452,8 +450,6 @@ def bppcfile_to_dict(
         df.loc[st_row+2, "par"] = "newick"
     except:
         pass
-    
-    print(df)
 
     # make dataframe a dict
     bpp_cdict = df.set_index('par').T.to_dict("records")[0]
@@ -467,9 +463,9 @@ def bppcfile_to_dict(
 
 # write dict representing the BPP control file to disk
 def dict_to_bppcfile(
-        input_dict:     BPP_control_dict, 
-        new_file_name:  file_path
-                    ):
+        input_dict:         BPP_control_dict, 
+        new_file_name:      file_path
+                    ) ->    BPP_control_file:
 
     # convert to pandas dataframe
     df = pd.DataFrame(list(input_dict.items()))
@@ -493,12 +489,12 @@ def BPP_run (
             ):
 
     try:
-        print(f"\nSTARTING BPP...\n{col_print.GREEN}")
+        print(f"{col_print.GREEN}\nSTARTING BPP...\n")
         subprocess.run(["bpp", "--cfile", control_file])
-        print(f"{col_print.RESETC}\n\t\t -- BPP RUN SUCCESSFUL --")
+        print(f"{col_print.RESETC}")
     
     except:
-        print("ERROR: THE FILES SUPPLIED TO BPP CAUSE A CRASH")
+        print("[X] ERROR: THE FILES SUPPLIED TO BPP CAUSE A CRASH")
         exit()
 
 # extract the most probable species tree from the "outfile" produced by BPP A01 or BPP A11
@@ -520,7 +516,7 @@ def extract_Speciestree (
         return tree
 
     except:
-        print("ERROR: TREE COULD NOT BE EXTRACTED FROM BPP RESULTS")
+        print("[X] ERROR: TREE COULD NOT BE EXTRACTED FROM BPP RESULTS")
         exit() 
 
 # extract the best supported species list produced by BPP A11
@@ -543,5 +539,5 @@ def extract_Pops(
         return speciesnames 
 
     except:
-        print("ERROR: POPULATIONS COULD NOT BE EXTRACTED FROM BPP RESULTS")
+        print("[X] ERROR: POPULATIONS COULD NOT BE EXTRACTED FROM BPP RESULTS")
         exit() 

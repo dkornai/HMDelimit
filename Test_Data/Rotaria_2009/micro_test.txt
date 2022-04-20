@@ -2,8 +2,8 @@ alignment file = D_ROT_align.txt
 Imap file = D_ROT_imap.txt
 
 HM mode = merge
-
+HM guide tree = ((T,(N,S)),M);
 threads = 2 1 2
 burnin =   5000
 nsample = 15000   
-sampfreq = 2
+sampfreq = 1

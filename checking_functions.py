@@ -352,13 +352,9 @@ def check_Print(printparam):
         try:
             printsplit = printparam.split(" ")
             if all(char == "0" or char == "1" for char in printsplit):
-                if 4 <= len(printsplit) <=5:
-                    if printsplit[0] == "1":
-                        printstate = 1
-                    else:
-                        printstate = -2
-                else:
-                    printstate = -1
+                printstate = 1
+            else:
+                printstate = -1
         except:
             printstate = -1
 
@@ -383,6 +379,7 @@ def check_SandT_popsizes(s_and_t, popsizes):
     if s_and_t == "?" and popsizes == "?":
         st_state = 0
     else:
+        st_state = -1
         try:
             st_split = s_and_t.split()
             num = int(st_split[0]) # this should be the number of species
@@ -395,14 +392,8 @@ def check_SandT_popsizes(s_and_t, popsizes):
                     # if the popsizes row also has the correct number of integer values
                     if all(size.is_integer() for size in popsize_split) and len(popsize_split) == num:
                         st_state = 1
-                    else:
-                        st_state = -4
-                else:
-                    st_state = -3
-            else:
-                st_state = -2
         except:
-            st_state = -1
+            pass
 
     return st_state
 
@@ -441,15 +432,15 @@ def check_BPP_mode(sd, st, BPP_mode):
             if BPP_mode == "A00":
                 if   sd == "0":
                     sd_state = 1
-                elif check_speciesdelimitation(sd) == 1:
+                elif check_speciesdelimitation(sd):
                     sd_state = -2
             elif BPP_mode == "A01":
                 if   sd == "0":
                     sd_state = 1
-                elif check_speciesdelimitation(sd) == 1:
+                elif check_speciesdelimitation(sd):
                     sd_state = -3
             elif BPP_mode == "A11":
-                if   check_speciesdelimitation(sd) == 1:
+                if   check_speciesdelimitation(sd):
                     sd_state = 1
                 elif sd == "0":
                     sd_state = -4

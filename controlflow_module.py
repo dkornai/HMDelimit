@@ -1,9 +1,15 @@
+from check_param_module import check_A01_to_A11_compatibility, check_A11_to_A00_compatibility, check_BPP_cfile
+from custom_types import Master_control_dict, Tree_newick
 from helper_functions import read_MasterControl
 from bpp_cfile_module import get_known_BPP_param
+from bpp_cfile_module import get_user_BPP_param
+
+from data_dicts import col_print
 
 # find trees in all possible locations
-def get_Tree(input_mc_file):
-    mc_dict = read_MasterControl(input_mc_file)
+def get_Tree(
+        mc_dict:    Master_control_dict
+            ) ->    dict[str, Tree_newick]:
 
     trees = {"tree_HM"        :mc_dict["tree_HM"], 
              "tree_start"     :mc_dict["tree_start"], 
@@ -13,57 +19,35 @@ def get_Tree(input_mc_file):
 
     return trees
 
-# find imap files in all possible locations
-def get_Imap(input_mc_file):
-    mc_dict = read_MasterControl(input_mc_file)
-
-    imapfiles = {"imap_MCF"   :mc_dict["file_imap"],
-                 "imap_hm"    :get_known_BPP_param(mc_dict, "A00" )["Imapfile"],
-                 "imap_delim" :get_known_BPP_param(mc_dict, "A11" )["Imapfile"],
-                 "imap_start" :get_known_BPP_param(mc_dict, "A01" )["Imapfile"],}
-
-    return imapfiles
-
-# find alignment files in all possible locations
-def get_Imap(input_mc_file):
-    mc_dict = read_MasterControl(input_mc_file)
-
-    seqfiles = {"seq_MCF"     :mc_dict["file_seq"],
-                "seq_hm"      :get_known_BPP_param(mc_dict, "A00" )["seqfile"],
-                "seq_delim"   :get_known_BPP_param(mc_dict, "A11" )["seqfile"],
-                "seq_start"   :get_known_BPP_param(mc_dict, "A01" )["seqfile"],}
-
-    return seqfiles
-
-
 # scan the tree presence dict to decide which state the program will start from
 def find_initial_State(input_mc_file):
-    print("\nCONTROL FLOW:\n")
+    print(f"\n{col_print.BLUE}CHECKING OF CONTROL FLOW{col_print.RESETC}\n")
 
     mc_dict = read_MasterControl(input_mc_file)
-    tree_state = get_Tree(input_mc_file)
-    # program states are entered in this order, depending on whether a tree for a given stage was specified
+    tree_state = get_Tree(mc_dict)
     
-    # if a guide tree for the HM stage is specified, skip all stages before HM
+    # program states are entered in this order, depending on whether a tree for a given stage was specified
+        # if a guide tree for the HM stage is specified, skip all stages before HM
     if tree_state["tree_HM"] != "?":
         p_state = 3
         print(f"HM guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_HM']}")
-    # if a starting tree for A11 is specified, skip all other stages before
+        # if a starting tree for A11 is specified, skip all other stages before
     elif tree_state["tree_start"] != "?":
         p_state = 2
         print(f"Starting Delimitation guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_start']}")
-     # if a guide tree for the HM stage is specified in it's control file, and no trees are in the MCF
+        # if a guide tree for the HM stage is specified in it's control file, and no trees are in the MCF
     elif tree_state["tree_BPPA00"] != "?":
         p_state = 3
         print(f"HM guide tree identified in the BPP control file: {mc_dict['ctl_file_HM']}\n\n\tTree: {tree_state['tree_BPPA00']}")
-    # if a tree for the SD stage is specified in it's control file, and no trees are in the MCF
+        # if a tree for the SD stage is specified in it's control file, and no trees are in the MCF
     elif tree_state["tree_BPPA11"] != "?":
         p_state = 2
         print(f"Starting delimitation guide tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA11']}")
-    # if a guide tree for the starting topolgy inference stage is specified in it's control file, and no trees are in the MCF
+        # if a guide tree for the starting topolgy inference stage is specified in it's control file, and no trees are in the MCF
     elif tree_state["tree_BPPA01"] != "?":
         p_state = 1
         print(f"Starting Topology inference helper tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA01']}")
+        # if no tree is found
     else:
         p_state = 1
         print("No trees found in the Master Control File, or associated BPP control files.")
@@ -87,8 +71,39 @@ def find_initial_State(input_mc_file):
     if p_state == 3:
         print("1)", stage_3_desc)
 
-    print("\t\t-- PROCEEDING TO NEXT STEP --")
-
     return p_state
 
+# perform the appropriate checks for BPP parameters in the stages that will be executed
+def controlled_check(input_mc_file, p_state):
 
+    mc_dict = read_MasterControl(input_mc_file)
+    compatible = False
+
+    if   p_state == 3:
+        A00_param, A00_source = get_user_BPP_param(mc_dict, "A00")
+        
+        if check_BPP_cfile(A00_param, A00_source, "A00"):
+            compatible = True
+
+    elif p_state == 2:
+        A11_param, A11_source = get_user_BPP_param(mc_dict, "A11")
+        A00_param, A00_source = get_user_BPP_param(mc_dict, "A00", mask_A11 = True)
+        
+        if check_BPP_cfile(A11_param, A11_source, "A11"):
+            if check_A11_to_A00_compatibility(A11_param, A00_param):
+                if check_BPP_cfile(A00_param, A00_source, "A00"):
+                    compatible = True
+
+    elif p_state == 1:
+        A01_param, A01_source = get_user_BPP_param(mc_dict, "A01")
+        A11_param, A11_source = get_user_BPP_param(mc_dict, "A11")
+        A00_param, A00_source = get_user_BPP_param(mc_dict, "A00", mask_A11 = True)
+        
+        if check_BPP_cfile(A01_param, A01_source, "A01"):
+            if check_A01_to_A11_compatibility(A01_param, A11_param):
+                if check_BPP_cfile(A11_param, A11_source, "A11"):
+                    if check_A11_to_A00_compatibility(A11_param, A00_param):
+                        if check_BPP_cfile(A00_param, A00_source, "A00"):
+                            compatible = True
+
+    return compatible

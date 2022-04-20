@@ -83,7 +83,7 @@ def StartingTopolgy (
     #-----------------------------#
     print("\nRESULTS:")
     print(f"\t\t\nSTARTING TREE:\n\n{tree}")
-    print(f"\n-- STARTING PHYLOGENY INFERENCE SUCCESSFUL --")
+    print(f"\nSTARTING PHYLOGENY INFERENCE SUCCESSFUL")
 
     return tree
 
@@ -144,7 +144,7 @@ def StartingDelimitation(
     print(f"\t\t\nGUIDE TREE:\n\n{guide_tree}")
     print(f"\t\t\nIMAP:\n")
     pretty(Imap_to_PopInd_Dict(imap))
-    print(f"\n-- STARTING DELIMITATION SUCCESSFULLY COMPLETED --")
+    print(f"\nSTARTING DELIMITATION SUCCESSFULLY COMPLETED")
 
     return guide_tree, imap, 
 
@@ -218,10 +218,20 @@ def HierarchicalMethod  (
     print(f"\n{col_print.BLUE}BEGINNING THE HIERARCHICAL METHOD!{col_print.RESETC}")
  
     mc_dict = read_MasterControl(input_mcfile)
+
+    # collect the guide tree from the user or the previous stage
+    if input_guide_tree == None:
+        guide_tree = get_known_BPP_param(mc_dict, "A00")["newick"]
+    else:
+        guide_tree = input_guide_tree
     
-    guide_tree = input_guide_tree
-    indpop_dict = Imap_to_IndPop_Dict(input_imap)
+    # collect the imap from the user or the previous stage
+    if input_imap == None:
+        indpop_dict = Imap_to_IndPop_Dict(get_known_BPP_param(mc_dict, "A00")["Imapfile"])
+    else:
+        indpop_dict = Imap_to_IndPop_Dict(input_imap)
     
+    # set up the starting state, depending on the mode, and also infer the edge halting state
     accepted_pops, halt_pop_number = get_HM_StartingState(guide_tree, get_HM_parameters(mc_dict)["mode"])
 
     #-----------------------------#

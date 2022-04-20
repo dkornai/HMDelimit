@@ -265,6 +265,9 @@ def decisionUserFeedback(
         decision:               list[list[Species_name]]
                         ):
 
+    print("@@@@@@@@@")
+    print(hm_param)
+
     # collect if the program is working in merge or split mode
     mode = hm_param['mode'].upper()
     gdi_verb = "<"
@@ -413,23 +416,23 @@ def decisionModule  (
         accepted_pops:      Population_list, 
         halt_pop_number:    int
                     ) ->    tuple[Population_list, bool]:
-                    
+
     print("\nMAKING DECISIONS BASED ON BPP MODEL RESULTS")
 
     # extract the parameter values relevant to the decision
-    parameters = get_demographic_param(BPP_outfile, proposed_changes, hm_param)
+    demog_param = get_demographic_param(BPP_outfile, proposed_changes, hm_param)
     
     # check if the parameter values are within the thresholds required to accept a decision
-    param_sufficient = criteria_matcher(parameters, hm_param)
+    match_dict = criteria_matcher(demog_param, hm_param)
     
     # get the final list of population pairs that match the necessary criteria to accept
-    decision = make_decision(param_sufficient, hm_param)
+    decision = make_decision(match_dict, hm_param)
 
     # print feedback to the user about the decision process
-    decisionUserFeedback(hm_param, proposed_changes, parameters, param_sufficient, decision)
+    decisionUserFeedback(proposed_changes, demog_param, hm_param, match_dict, decision)
 
     # implement the changes to the list of accepted popuations
-    new_accepted_pops = implement_decision(hm_param, accepted_pops, decision)
+    new_accepted_pops = implement_decision(accepted_pops, decision, hm_param)
 
     # keep track of whether the program has finished 
     to_iterate = stop_check(hm_param, decision, new_accepted_pops, halt_pop_number)
