@@ -172,7 +172,6 @@ def HMIteration (
     target_dir = f'{input_mcfile[0:-4]}_2_HM_{step}'
     create_TargetDir(target_dir_name=target_dir)
     
-    ##### FIX FIX FIX WHAT HAPPENS IF WE REACH THE FINAL STAGE??????
     # generate a proposal based on the previously accepted results
     prop_change, prop_tree, prop_imap = HMproposal(guide_tree_newick = input_guide_tree,
                                                    base_indpop_dict  = input_indpop_dict,
@@ -209,8 +208,7 @@ def HMIteration (
 
     return accepted, to_iterate
 
-### FIX FIX ADD PRINTOUT OF INTERMEDIATE RESULTS
-
+# final wrapper function for starting and iterating through the Hierarchical Method
 def HierarchicalMethod  (
         input_mcfile:       Master_control_file, 
         input_guide_tree:   Tree_newick = None, 
@@ -240,5 +238,3 @@ def HierarchicalMethod  (
         step += 1
     #-----------------------------#
     print(f"{col_print.BLUE}-- HM COMPLETED! --{col_print.RESETC}")
-
-    #### FIX FIX FIX ADD PRINTOUT OF FINAL RESULTS
