@@ -1,12 +1,11 @@
 ## DEPENDENCDIES
-
-# PYTHON STANDARD DEPENDENCIES
+# STANDAR LIBRARY DEPENDENCIES
 import os
 import copy
 import warnings
 import re
 
-# PYTHON LIBRARY DEPENDENCIES
+# EXTERNAL LIBRARY DEPENDENCIES
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=SyntaxWarning)
     from ete3 import Tree
@@ -22,10 +21,11 @@ from helper_functions import Imap_to_PopInd_Dict
 # ALIGNMENT AND IMAP SPECIFIC DEPENDENCIES
 from align_imap_module import autoPopParam, count_Seq_Per_Pop
 
-# DATA DEPENDENCIES
+## DATA DEPENDENCIES
 from data_dicts import HM_decision_criteria
 from data_dicts import valid_BPP_param_names
 from data_dicts import MCF_param_dict
+
 
 ## CHECK IF THE PARAMETER IS EXPLICITLY WRONGLY SPECIFIED
 '''
@@ -176,8 +176,6 @@ def check_MSA_filetype(alignmentfile):
             align = alignfile_to_MSA(alignmentfile)
                 # check that the alignment has one loci, and at least two sequences at each loci
             align_state = 1
-            if any(len(locus) < 2 for locus in align):
-                align_state = -3 # lower errors than -1 correspond to specific problems
         except:
             align_state = -2 # lower errors than -1 correspond to specific problems
 
@@ -220,6 +218,7 @@ def check_BPP_ctl_filetype(bpp_ctl_file):
 
 ## BPP SPECIFIC MISSPECIFICATION CHECKING FUNCTIONS
 ##### FIX FIX FIX ADD EXTRA SPECIESMODELPRIOR PARAMETER TO CHECK WHEN CHECKING FOR A11
+### FIX FIX FIX ADD LOCUSRATE CHECKER!!!
 '''
 These functions check if the user has misspelled or
 misformatted BPP control file parameters
@@ -281,7 +280,7 @@ def check_Thetaprior(thetaprior):
 '''
 This quite complex function checks if the number, starting point, and offset of the 
 requested threads is actually compatible with the number of threads available
-to the machine. If the user requests more cores than available, or tries to
+to the machine. This is beacuse if the user requests more cores than available, or tries to
 request that BPP pins threads to nonexistent cores, BPP will crash. 
 '''
 def check_Threads(threads):
@@ -482,8 +481,6 @@ def check_BPP_mode(sd, st, BPP_mode):
         
     return sd_state, st_state
 
-### FIX FIX FIX ADD LOCUSRATE CHECKER!!!
-
 ## HM PARAMETER SPECIFIC CHECKERS
 '''
 These functions check for simple misspecifications or mispellings of 
@@ -566,7 +563,7 @@ def check_Imap_Seq_compat(param_check, imapfile, alignmentfile):
         print(f"\t2) MSA file  = {alignmentfile}\n")
         
         # check can only proceeed if both files are of the correct type to begin with
-        if param_check["Imapfile"] == 1 and param_check["seqfile"] == 1:
+        if param_check["Imapfile"] and param_check["seqfile"]:
             comp_status = assert_Imap_Seq_compat(imapfile, alignmentfile)
 
         else: # if the files exist but have errors, they cannot be checked for compatibility
@@ -627,7 +624,7 @@ def check_Imap_Tree_compat(param_check, imapfile, tree):
         print(f"\t2) Newick tree = {tree}\n")
 
         # check can only proceed if both parameters are of the correct type to begin with
-        if param_check["newick"] == 1 and param_check["Imapfile"] == 1:
+        if param_check["newick"] and param_check["Imapfile"]:
             comp_status = assert_Imap_Tree_compat(imapfile, tree)
         
         else: # if the files exist but have errors, they cannot be checked for compatibility
@@ -707,7 +704,7 @@ def check_SandT_Imap_MSA_compat(param_check, s_and_t, popsizes, imapfile, alignm
         print(f"\t\t   {popsizes}\n")
         
         # check can only proceed if all parameters are of the correct type to begin with, and no upstream incompatibilities exist
-        if param_check["species&tree"] == 1 and param_check["seqfile"] == 1 and param_check["Imapfile"] == 1 and param_check['comp_Imap_seq'] == 1:
+        if param_check["species&tree"] and param_check["seqfile"] and param_check["Imapfile"] and param_check['imap_seq_compat']:
             comp_status = assert_SandT_Imap_MSA_compat(s_and_t, popsizes, imapfile, alignmentfile)
 
         else: # if the files exist but have errors, they cannot be checked for compatibility
