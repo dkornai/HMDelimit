@@ -148,7 +148,7 @@ def check_BPP_cfile (
 
     # check that the number of loci requested is not greater than the amount available in the MSA
     if par_check["nloci"] == 1 and par_check["seqfile"] == 1:
-        par_check["nloci"] = check_nloci_MSA_compat(param["nloci"], param["alignmentfile"])
+        par_check["nloci"] = check_nloci_MSA_compat(param["nloci"], param["seqfile"])
     # chcek that the number of threads requested does not exceed the number of loci in the MSA
     if par_check["nloci"] == 1 and par_check["threads"] == 1:
         par_check["threads"] = check_Threads_nloci_compat(param["threads"], param["nloci"])

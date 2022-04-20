@@ -1,0 +1,15 @@
+alignment file = align.txt
+Imap file = imap.txt
+
+BPP A01 starting phylogeny inference control file = A01.ctl
+BPP A11 starting delimitation control file  = A11.ctl
+BPP A00 HM parameter inference control file = A00.ctl
+
+threads = 14 2 1
+burnin =   5000
+nsample = 15000   
+sampfreq = 1
+
+*thetaprior = 3 0.06
+*tauprior = 3 0.01
+finetune = 1: 5 0.001 0.001 0.001 0.3 0.33 1.0

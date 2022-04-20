@@ -122,6 +122,7 @@ The function also returns a source dict which tells the origin of the paramter (
 This is useful when checking compatibilities and misspecifications in the BPP command file,
 as the user can be pointed to the source of the incompatible or badly specified parameter
 '''
+### FIX SOURCE IS INCORRECT !!
 def get_user_BPP_param  (
         input_mc_dict:          Master_control_dict, 
         mode:                   BPP_mode,

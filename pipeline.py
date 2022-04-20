@@ -31,5 +31,5 @@ def HMpipeline(input_control_file):
             guide_tree, imap = StartingDelimitation(mc_file, starting_tree = tree)
             HierarchicalMethod(mc_file, guide_tree, imap)
 
-HMpipeline("Test_Data/Rotaria_2009/micro_test.txt")
+HMpipeline("Test_Data/Ants_2021/MC.txt")
 #HMpipeline("badMC.txt")
