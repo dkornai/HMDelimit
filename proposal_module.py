@@ -5,12 +5,11 @@ TO SPLIT POPULATIONS, OR TO MERGE POPULATIONS.
 '''
 
 ## DEPENDENCDIES
-
-# PYTHON STANDARD DEPENDENCIES
+# STANDARD LIBRARY DEPENDENCIES
 import copy
 import warnings
 
-# PYTHON LIBRARY DEPENDENCIES
+# EXTERNAL LIBRARY DEPENDENCIES
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=SyntaxWarning)
     from ete3 import Tree
@@ -18,10 +17,14 @@ with warnings.catch_warnings():
 # HELPER FUNCTION DEPENDENCIES
 from helper_functions import flatten
 
-# TYPE HINTING DEPENDENCIES
-from custom_types import Imap_list
-from custom_types import Newick_tree
+## TYPE HINTING 
+from custom_types import Alias_dict
+from custom_types import Species_name
+from custom_types import Tree_newick
 from custom_types import Population_list
+from custom_types import HM_mode
+from custom_types import Imap_list
+
 
 ## SPECIALIZED HELPER FUNCTIONS
  
@@ -30,7 +33,10 @@ from custom_types import Population_list
     # The naming of internal nodes is accomplished by combining the names of 
     # the descendant nodes. This is done from leaf to root. 
 
-def name_Internal_nodes(tree:Newick_tree):
+def name_Internal_nodes (
+        tree:                   Tree
+                        ) ->    Tree:
+
     for node in tree.traverse("postorder"):
         if len(node.name) == 0:
             newname = ""
@@ -42,11 +48,18 @@ def name_Internal_nodes(tree:Newick_tree):
     return tree
 
 # small wrapper function that returns an ete3 tree in a newick formatted string
-def tree_To_Newick(tree:Tree) -> Newick_tree:
+def tree_To_Newick  (
+        tree:               Tree
+                    ) ->    Tree_newick:
+
     return tree.write(format=9)
 
 # returns a list of node pairs that are mergeable
-def get_Mergeable_from_tree (tree:Tree, pops:Population_list):
+def get_Mergeable_from_tree (
+        tree:                       Tree, 
+        pops:                       Population_list
+                            ) ->    list[list[Species_name]]:
+
     tree = copy.deepcopy(tree)
     tree.prune(pops)
 
@@ -59,7 +72,11 @@ def get_Mergeable_from_tree (tree:Tree, pops:Population_list):
     return mergepairs
 
 # returns the names of the node pairs that can be split
-def get_Splitable_from_tree (tree:Tree, pops:Population_list):
+def get_Splitable_from_tree (
+        tree:                       Tree, 
+        pops:                       Population_list
+                            ) ->    list[list[Species_name]]:
+
     splitpairs = []
     for node in tree.traverse("postorder"):
         if node.name in pops and len(list(node.iter_descendants("levelorder"))) != 0:
@@ -73,7 +90,11 @@ def get_Splitable_from_tree (tree:Tree, pops:Population_list):
     return splitpairs
 
 # remaps the leaf nodes of the tree to the most recent ancestor that is currently in the pop list
-def remap_from_tree(tree:Tree, pops:Population_list):
+def remap_from_tree (
+        tree:               Tree, 
+        pops:               Population_list
+                    ) ->    Alias_dict:
+
     remap_dict = {}
     for node in tree.traverse("levelorder"):
         # for each leaf
@@ -95,7 +116,11 @@ def remap_from_tree(tree:Tree, pops:Population_list):
     return remap_dict
 
 # writes the remap proposed by the program to a new imap list
-def remap_to_imapList(imap_base: Imap_list, remap:dict):
+def remap_to_imapList   (
+        imap_base:              Imap_list, 
+        remap:                  Alias_dict
+                        ) ->    Imap_list:
+
     IDs = []
     pop = []
     for ind in imap_base:
@@ -105,12 +130,14 @@ def remap_to_imapList(imap_base: Imap_list, remap:dict):
     return [IDs, pop]
 
 
-
 ## MAIN PROPOSAL FUNCTIONS
 
 # generate the starting state of accepted populations for the HM stage, depending on if the method is progressive
-# merge, or progressive split
-def get_HM_StartingState(input_guide_tree:Newick_tree, mode):
+# merge, or progressive split. Also return the number of populations when the end condition is reached
+def get_HM_StartingState(
+        input_guide_tree:       Tree_newick, 
+        mode:                   HM_mode
+                        ) ->    tuple[Population_list, int]:
     
     tree = Tree(input_guide_tree)
     tree = name_Internal_nodes(tree)
@@ -136,10 +163,13 @@ def get_HM_StartingState(input_guide_tree:Newick_tree, mode):
     # This function is used in the Hierarchical Method to generate the new and topology and IMAP,
     # corresponding to the next iteration of the process.
     
-def HMproposal(guide_tree_newick:Newick_tree, 
-               base_indpop_dict, 
-               current_pops_list:Population_list, 
-               mode):
+def HMproposal  (
+        guide_tree_newick:  Tree_newick, 
+        base_indpop_dict, 
+        current_pops_list:  Population_list, 
+        mode:               HM_mode
+                ) ->        tuple[list[list[Species_name]], Tree_newick, Imap_list]:
+
     # transform newick tree to ete3, and name all the internal nodes
     guide_ete3_tree = Tree(guide_tree_newick)
     guide_ete3_tree = name_Internal_nodes(guide_ete3_tree)

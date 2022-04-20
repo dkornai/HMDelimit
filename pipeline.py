@@ -12,9 +12,9 @@ def HMpipeline(input_control_file):
     # # check which trees are provided, and set the pipeline to begin the appropriate stage
     # p_state = find_initial_State(input_control_file)
     
-    # tree = StartingTopolgy(input_control_file)
-    # guide_tree, imap = StartingDelimitation(input_control_file, starting_tree = tree)
-    # HierarchicalMethod(input_control_file, guide_tree, imap)
+    tree = StartingTopolgy(input_control_file)
+    guide_tree, imap = StartingDelimitation(input_control_file, starting_tree = tree)
+    HierarchicalMethod(input_control_file, guide_tree, imap)
 
 HMpipeline("micro_test.txt")
 HMpipeline("badMC.txt")

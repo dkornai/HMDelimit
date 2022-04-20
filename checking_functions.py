@@ -109,7 +109,7 @@ This function aims to ensure that the master control file only contains calls
 to valid parameters of the pipeline. In other cases, the pipeline may fail in
 unexpected ways, which should be avoided as much as possible.
 '''
-def check_MasterControl_filetype(input_mc_file):
+def check_Master_control_filetype(input_mc_file):
     ## CHECK IF A FILE IS SUPPLIED, OR EXISTS IN THE FIRST PLACE
     mcf_status = check_File(input_mc_file)
     if mcf_status == 0:

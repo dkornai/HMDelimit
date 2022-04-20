@@ -2,7 +2,7 @@
 
 # HELPER FUNCTION DEPENDENCIES
 from helper_functions import pretty, read_MasterControl
-from helper_functions import prettyTable
+from helper_functions import pretty_Table
 
 # CHECKING FUNCTION DEPENDENCIES
 from checking_functions import check_BPP_ctl_filetype, check_File, check_Imap_Seq_compat, check_Imap_filetype, check_MSA_filetype, check_Outfilename, check_Print, check_SandT_popsizes, check_Imap_Tree_compat, check_ValueIsFrom, check_speciesdelimitation
@@ -86,7 +86,7 @@ def check_Master_Control(input_control_file):
         feedback.append(master_Control_feedback[key][param_checked[key]])
     table = [parameters, values, feedback]
     colnames = ["PARAMETER", "VALUE", "FEEDBACK"]
-    prettyTable(table, colnames)
+    pretty_Table(table, colnames)
 
     # if no immediate errors are found, return which parameters are provided and which are empty
     error_n = sum(i < 0 for i in list(param_checked.values()))

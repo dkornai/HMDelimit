@@ -22,10 +22,12 @@ from data_dicts import default_BPP_A01_cfile_dict
 from data_dicts import default_BPP_A11_cfile_dict
 
 # TYPE HINTING DEPENDENCIES
-from custom_types import BPPControl_dict
+from custom_types import BPP_mode
+from custom_types import BPP_control_dict
 from custom_types import Imap_list
-from custom_types import Newick_tree
-from custom_types import MasterControl_dict
+from custom_types import Tree_newick
+from custom_types import Master_control_dict
+
 
 ## SPECIALIZED FUNCTIONS
 
@@ -66,7 +68,10 @@ at the "ctl_file_phylo","ctl_file_delim","ctl_file_HM" parameters of the MCF.
     and present different parameters to each mode of BPP. For example, this could
     be useful if the user wants to use more samples in the A00 stage than during A01
 '''
-def get_known_BPP_param(input_mc_dict:MasterControl_dict, mode) -> BPPControl_dict: 
+def get_known_BPP_param (
+        input_mc_dict:          Master_control_dict, 
+        mode:                   BPP_mode
+                        ) ->    BPP_control_dict: 
     
     # start by combining the empty and default generic BPP control dicts
     BPP_cdict = overwrite_dict(empty_BPP_cfile_dict, default_BPP_cfile_dict)
@@ -117,17 +122,16 @@ The function also returns a source dict which tells the origin of the paramter (
 This is useful when checking compatibilities and misspecifications in the BPP command file,
 as the user can be pointed to the source of the incompatible or badly specified parameter
 '''
-def get_user_BPP_param(input_mc_dict:MasterControl_dict, 
-                       mode,
-                       mask_A11 = False):       # optional ability to mask any parameters that would be inherited from the A11 stage  
+def get_user_BPP_param  (
+        input_mc_dict:          Master_control_dict, 
+        mode:                   BPP_mode,
+        mask_A11:               bool = False # optional ability to mask any parameters that would be inherited from the A11 stage  
+                        ) ->    tuple[BPP_control_dict, dict]:    
     
-    BPP_cdict = empty_BPP_cfile_dict
-
     # find any BPP parameters available in the master control dict
-    BPP_cdict = overwrite_dict(BPP_cdict, input_mc_dict)
+    BPP_cdict = overwrite_dict(empty_BPP_cfile_dict, input_mc_dict)
     file_locations = {"seqfile" :input_mc_dict["file_align"],
                       "Imapfile":input_mc_dict["file_imap"]}
-        
     BPP_cdict = overwrite_dict(BPP_cdict, file_locations)
 
     # keep track of the origin of parameters
@@ -190,7 +194,10 @@ It can generate missing:
 By generating these values, this function enables People unfamiliar 
 with BPP and/or Bayesian phylogenetics can use the pipeline.
 '''
-def generate_unkown_BPP_param(input_control_dict:BPPControl_dict):
+def generate_unkown_BPP_param   (
+        input_control_dict:             BPP_control_dict
+                                ) ->    BPP_control_dict:
+    
     BPP_cdict = copy.deepcopy(input_control_dict)
     
     # generate seed if missing
@@ -231,7 +238,10 @@ def generate_unkown_BPP_param(input_control_dict:BPPControl_dict):
 This function is only used at the very begenning of a BPP A01 analysis if no tree is
 provided by the user (tree can be in MCF, or in any of the BPP control files)
 '''
-def generate_unknown_BPP_tree(input_control_dict:BPPControl_dict):
+def generate_unknown_BPP_tree   (
+        input_control_dict:             BPP_control_dict
+                                ) ->    BPP_control_dict:
+
     BPP_cdict = copy.deepcopy(input_control_dict)
 
     if BPP_cdict['newick'] == '?':
@@ -248,15 +258,17 @@ changes in population structure (which are reperesented by the new tree and the 
 The population parameters are calculated using "autoPopParam".
 '''
 
-def proposal_compliant_BPP_param(input_control_dict:BPPControl_dict, 
-                                 prop_imap:Imap_list, 
-                                 prop_imap_name:str, 
-                                 prop_tree:Newick_tree) -> BPPControl_dict:
+def proposal_compliant_BPP_param(
+        input_control_dict:             BPP_control_dict, 
+        prop_imap:                      Imap_list, 
+        prop_imap_name:                 str, 
+        prop_tree:                      Tree_newick
+                                ) ->    BPP_control_dict:
 
     BPP_cdict = copy.deepcopy(input_control_dict)
    
     # generate the s&t and popsizes parameters corresponding to the proposed imap
-    prop_pop_param = autoPopParam(imap          = prop_imap, imap_is_list = True,
+    prop_pop_param = autoPopParam(imap          = prop_imap,
                                   alignmentfile = BPP_cdict["seqfile"])
     
     # create a dict which specifies the keys that will be overwritten
@@ -269,5 +281,3 @@ def proposal_compliant_BPP_param(input_control_dict:BPPControl_dict,
     BPP_cdict = overwrite_dict(BPP_cdict, BPP_proposed_param)
 
     return BPP_cdict
-
-

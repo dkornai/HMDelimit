@@ -29,4 +29,7 @@
       sampfreq = 10
        nsample = 100000
 
+locusrate =        
+
+
 *** Note: Make your window wider (140 columns) before running the program.

@@ -1,17 +1,23 @@
+'''
+THIS MODULE CONTAINS HELPER FUNCTIONS THAT ARE REUSED IN OTHER MODULES.
+MANY OF THE FUNCTIONS RELATE TO I-O OPERATIONS.
+'''
 ## DEPENDENCIES 
 
-# PYTHON STANDARD DEPENDENCIES
+# STANDARD LIBRARY DEPENDENCIES
 import subprocess
 import re
 import os
 import copy
 import io
 import warnings
+import ntpath
 
-# PYTHON LIBRARY DEPENDENCIES
+# EXTERNAL LIBRARY DEPENDENCIES
 import pandas as pd
 
 from Bio import AlignIO
+from Bio.Align import MultipleSeqAlignment
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=SyntaxWarning)
@@ -20,22 +26,30 @@ with warnings.catch_warnings():
 ## DATA DEPENDENCIES
 from data_dicts import empty_HM_parameters
 from data_dicts import default_HM_parameters
+from data_dicts import MCF_param_dict
+from data_dicts import col_print
+
+## TYPING HINTS
+from custom_types import file_path
+from custom_types import Text_rows_list
+from custom_types import Imap_file
+from custom_types import Imap_list
+from custom_types import Tree_newick
+from custom_types import BPP_control_dict
+from custom_types import BPP_control_file
+from custom_types import Master_control_dict
+from custom_types import Master_control_file
+from custom_types import Phylip_MSA_file
+from custom_types import Population_list
+from custom_types import HM_decision_parameters
 
 ## CORE HELPER FUNCTIONS
-# sets the working directory to the source directory of the master control file, and also cuts the path.
-def set_wd(mastercontrol_filepath):
-    working_dir = os.path.dirname(mastercontrol_filepath)
-    os.chdir(working_dir)
-    print(f"\nWorking directory changed to: {working_dir}\n")
-
-    def path_leaf(path):
-        head, tail = ntpath.split(path)
-        return tail or ntpath.basename(head)
-
-    return path_leaf(mastercontrol_filepath)
 
 # reads a text file into an array of rows
-def readLines(file_name):
+def readLines   (
+        file_name:      file_path
+                ) ->    Text_rows_list:
+
     fileObj = open(file_name, "r")
     lines = fileObj.read().splitlines() 
     fileObj.close()
@@ -43,18 +57,28 @@ def readLines(file_name):
     return lines 
 
 # return a flattened list from a list of lists
-def flatten(t):
+def flatten (
+        t:          list[list]
+            ) ->    list:
+
     return [item for sublist in t for item in sublist]
 
 # pad a string to the required length using spaces
-def padString(string, length):
+def padString   (
+        string:         str, 
+        length:         int
+                ) ->    str:
+
     while len(string) < length:
             string = string + " "
     
     return string
 
 # strip more than 1 trailing or leading whitespace
-def stripall(input_string):
+def stripall(
+        input_string:   str
+            ) ->        str:
+
     result = input_string
     try:
         while result[0] == " " or result[-1] == " ":
@@ -65,34 +89,50 @@ def stripall(input_string):
     return result
 
 # strip out any rows with only whitespace characters
-def removeEmptyRows(input_rows):  
-    output = []
-    for row in input_rows:
-        # regex searches for non-whitespace characters
-        if re.search("\S+", row):
-            output.append(row)
+def remove_empty_rows   (
+        input_rows:             Text_rows_list
+                        ) ->    Text_rows_list:  
+
+    output = [row for row in input_rows if re.search("\S+", row)]
 
     return output
 
+# read a text file, and return a filtered version with all text after "#" and "*" removed
+def read_filter_comments(
+        input_file:             file_path
+                        ) ->    Text_rows_list:
+
+    lines = readLines(input_file)
+    lines = [line.split("#")[0] for line in lines]
+    lines = [line.split("*")[0] for line in lines]
+    lines = remove_empty_rows(lines)
+
+    return lines
+
 # merges two dicts by updating the values of the first dict with several possible behaviours
-def overwrite_dict(dict_1, dict_2,                                       # the two dicts
-                   overwrite_to_unknown = False, ignore_known = False,):   # optional arguments to deviate from default behaviour
+def overwrite_dict  (
+        dict_1:             dict, 
+        dict_2:             dict,
+        ow_to_unknown:      bool = False, # optional arguments to deviate from default behaviour
+        ignore_known:       bool = False,
+                    ) ->    dict:   
+
     dict_out = copy.deepcopy(dict_1)
 
     # overwrite any valiues in the old dict where the new dict is not "?"
-    if overwrite_to_unknown == False and ignore_known == False:
+    if ow_to_unknown == False and ignore_known == False:
         for key in dict_out:
             if key in dict_2 and dict_2[key] != "?":
                 dict_out[key] = dict_2[key]
     
     # modifies default by overwriting for "?" values in the second dict
-    elif overwrite_to_unknown == True and ignore_known == False:
+    elif ow_to_unknown == True and ignore_known == False:
         for key in dict_out:
             if key in dict_2:
                 dict_out[key] = dict_2[key]
     
     # modifies the default behaviour, and does not overwrite for any parameters that are already known
-    elif ignore_known == True and overwrite_to_unknown == False:
+    elif ignore_known == True and ow_to_unknown == False:
         for key in dict_out:
             if key in dict_2 and dict_1[key] == "?":
                 dict_out[key] = dict_2[key]
@@ -100,7 +140,13 @@ def overwrite_dict(dict_1, dict_2,                                       # the t
     return dict_out 
 
 # track the changes that occur when two dicts are merged, and return if a given parameter is from dict1 or dict2
-def dict_source(dict_1, dict_2, dict_2_name, prev_sourcedict = None):
+def dict_source (
+        dict_1:             dict, 
+        dict_2:             dict, 
+        dict_2_name:        str, 
+        prev_sourcedict:    dict = None
+                ) ->        dict:
+
     if prev_sourcedict == None:
         sourcedict = {}
     else:
@@ -115,10 +161,14 @@ def dict_source(dict_1, dict_2, dict_2_name, prev_sourcedict = None):
                 
     return sourcedict
 
+
 ## GENERAL FILE AND FOLDER I-O
 
 # create a directory if it does not exist, and halt execution of the directory exists
-def create_TargetDir(target_dir_name):
+def create_TargetDir(
+        target_dir_name:    file_path
+                    ):
+    
     try:
         os.mkdir(target_dir_name)
         print(f"Directory '{target_dir_name}' created") 
@@ -127,11 +177,30 @@ def create_TargetDir(target_dir_name):
         print(f"ERROR: Directory '{target_dir_name}' already exists.")
         exit()
 
+# sets the working directory to the source directory of the master control file, and and also only leaves the remaining path
+def set_wd  (
+        mc_file: file_path
+            ) -> Master_control_file:
+
+    working_dir = os.path.dirname(mc_file)
+    
+    os.chdir(working_dir)
+    print(f"\nWorking directory changed to: {working_dir}\n")
+
+    def path_leaf(path):
+        head, tail = ntpath.split(path)
+        return tail or ntpath.basename(head)
+
+    return path_leaf(mc_file)
+
 
 ## PRINT HELPER FUNCTIONS
 
 # print large control dicts in an easy-to-read way
-def pretty(dict):
+def pretty  (
+        dict:   dict
+            ):
+    
     longest_key_length = max(map(len, dict))
     
     for key in dict:
@@ -143,12 +212,25 @@ def pretty(dict):
     print()
 
 # print a list of lists and associated column names in a readable form
-def prettyTable(input_table, input_colnames, column_break = "  "):
-    def customlen(string):
-        string = str(string)
-        string = string.split("\n")[0]
-        
-        return len(string)
+def pretty_Table(   
+        input_table:    list, 
+        input_colnames: list, 
+        column_break:   str = "  ", 
+        width_limit:    list[int] = None
+                ):
+
+    def customlen(string): # custom function to ignore the part of the row after "\n" when calculating lengths
+        return len(str(string).split("\n")[0])
+
+    # limit the length of phrases in a column to a maximum if required
+    if width_limit != None:
+        target_col = width_limit[0]
+        target_len = width_limit[1]
+
+        for i in range(len(input_table[0])):
+            item = input_table[target_col][i]
+            if customlen(item) > target_len:
+                input_table[target_col][i] = f"{item[:target_len-3]}..."
 
     # merge the column titles in as the first column elements
     for i in range(len(input_table)):
@@ -171,14 +253,18 @@ def prettyTable(input_table, input_colnames, column_break = "  "):
 ## MASTER CONTROL FILE I-O FUNCTIONS
 
 # this function is used to extract a named paramter from the control file, or return "?" if not found
-def read_MCF_param(input_text, target_param):
+def read_MCF_param  (
+        input_text:         Text_rows_list, 
+        target_param:       str
+                    ) ->    str:
+
     matches = str([match for match in input_text if target_param in match])
     try:
         result = matches.split("=")[1][:-2]
-        try:
-            result = result.split("#")[0]
-        except:
-            pass
+        # try:
+        #     result = result.split("#")[0]
+        # except:
+        #     pass
         try:
             while result[0] == " " or result[-1] == " ":
                 result = result.strip()
@@ -191,37 +277,21 @@ def read_MCF_param(input_text, target_param):
     return result
 
 # extract all supplied parameters from the master control file to a dict
-def read_MasterControl(input_control_file):
-    mc_lines = readLines(input_control_file)
-    control_file_params = {# parameters for the pipeline
-                           "file_align":      read_MCF_param(mc_lines, "alignment file"),
-                           "file_imap":       read_MCF_param(mc_lines, "Imap file"), 
-                           "tree_start":      read_MCF_param(mc_lines, "starting tree"),
-                           "tree_HM":         read_MCF_param(mc_lines, "HM guide tree"),  
-                           "ctl_file_phylo":  read_MCF_param(mc_lines, "BPP A01 starting phylogeny inference"),
-                           "ctl_file_delim":  read_MCF_param(mc_lines, "BPP A11 starting delimitation"),           
-                           "ctl_file_HM":     read_MCF_param(mc_lines, "BPP A00 HM parameter inference"),  
-                           # parameters for the merge decisions
-                           "mode":            read_MCF_param(mc_lines, "HM mode"),
-                           "GDI_thresh":      read_MCF_param(mc_lines, "GDI threshold"),
-                           "generations":     read_MCF_param(mc_lines, "HM generation threshold"),
-                           "mutationrate":    read_MCF_param(mc_lines, "HM mutation"),
-                           "HM_decision":     read_MCF_param(mc_lines, "HM decision parameters"),
-                           # parameters passed to BPP instances
-                           "seed":            read_MCF_param(mc_lines, "seed"),
-                           "thetaprior":      read_MCF_param(mc_lines, "thetaprior"), 
-                           "tauprior":        read_MCF_param(mc_lines, "tauprior"), 
-                           "finetune":        read_MCF_param(mc_lines, "finetune"),
-                           "sampfreq":        read_MCF_param(mc_lines, "sampfreq"), 
-                           "nsample":         read_MCF_param(mc_lines, "nsample"),                            
-                           "burnin":          read_MCF_param(mc_lines, "burnin"),
-                           "threads":         read_MCF_param(mc_lines, "threads"),
-                           }
+def read_MasterControl  (
+        input_mc_file:          Master_control_file
+                        ) ->    Master_control_dict:
+
+    mc_lines = read_filter_comments(input_mc_file)
+
+    # try to find lines that match the keyphrases of the parameters
+    control_file_params = {read_MCF_param(mc_lines, MCF_param_dict[param]) for param in MCF_param_dict}
     
     return control_file_params 
 
 # given the values in the MCF, and default values, collect all necessary decision thresholds used in the HM stage
-def get_HM_parameters(input_mc_dict):
+def get_HM_parameters   (
+        input_mc_dict:          Master_control_dict
+                        ) ->    HM_decision_parameters:
     
     # collect empty and default values
     hm_par = overwrite_dict(empty_HM_parameters, default_HM_parameters)
@@ -252,13 +322,14 @@ def get_HM_parameters(input_mc_dict):
 ## SEQUENCE ALIGNMENT I-O FUNCTIONS
 
 # return a properly filtered BioPython MSA object when pointed to a valid alignment file
-def alignfile_to_MSA(align_file):
+def alignfile_to_MSA(
+        align_file:Phylip_MSA_file
+                    ) -> list[MultipleSeqAlignment]:
+
     align_raw = readLines(align_file)
     
-    # remove all empty rows from the alignment, as this confuses biopython
-    align_noempty = removeEmptyRows(align_raw)
-
-    # remove superflous whitespaces from the numerical parameter rows, as this also confuses biopython
+    # remove all empty rows, and superflous whitespaces from the numerical parameter rows, as this confuses biopython
+    align_noempty = remove_empty_rows(align_raw)
     align_fixednum = []
     for line in align_noempty:
         # only applies to numeric lines, ignores others
@@ -280,14 +351,14 @@ def alignfile_to_MSA(align_file):
 
 
 ## IMAP I-O FUNCTIONS
-
 # read the Imap text file to return a list with the individual ids and population assignments
-def Imap_to_List(imap_file):
-    # ingest the imap file
+def Imap_to_List(
+        imap_file:      Imap_file
+                ) ->    Imap_list:
+
+    # ingest the imap file and remove all empty rows
     imap_rows = readLines(imap_file)
-    
-    # remove all empty rows from the IMAP, as this confuses the program needlessly
-    imap_lines = removeEmptyRows(imap_rows)
+    imap_lines = remove_empty_rows(imap_rows)
     
     # create empty array to store results
     imap_indiv = ([i.split(None, 2)[0] for i in imap_lines])
@@ -296,34 +367,39 @@ def Imap_to_List(imap_file):
     return [imap_indiv, imap_pop]
 
 # read the Imap text file or imap list to return a dict with key = individual ids, value = population assignments
-def Imap_to_IndPop_Dict(imap, imap_is_list = False):
+def Imap_to_IndPop_Dict (
+        imap, 
+                        ):
+
+    # modified behaviour, handles Imap lists
+    if type(imap) == list:
+        imap_indiv = imap[0]
+        imap_pop = imap[1]
     # default behaviour, expects Imap files
-    if imap_is_list == False:
+    else:
         # ingest the imap file
         imap_rows = readLines(imap)
         # remove all empty rows from the IMAP, as this confuses the program needlessly
-        imap_lines = removeEmptyRows(imap_rows)
+        imap_lines = remove_empty_rows(imap_rows)
          # create empty array to store results
         imap_indiv = [i.split(None, 2)[0] for i in imap_lines]
         imap_pop = [i.split(None, 2)[1] for i in imap_lines]
     
-    # modified behaviour, handles Imap lists
-    elif imap_is_list == True:
-        imap_indiv = imap[0]
-        imap_pop = imap[1]
-    
     return dict(zip(imap_indiv, imap_pop))
 
 # read the Imap text file, or an Imap list, to return a dict with key = pop names, value = IDs in that pop
-def Imap_to_PopInd_Dict(imap, imap_is_list = False):
-    # default behaviour, expects Imap files
-    if imap_is_list == False:
-        IDs = Imap_to_List(imap)[0]
-        Population = Imap_to_List(imap)[1]
+def Imap_to_PopInd_Dict (
+        imap, 
+                        ):
+
     # modified behaviour, handles Imap lists
-    elif imap_is_list == True:
+    if type(imap) == list:
         IDs = imap[0]
         Population = imap[1]
+    # default behaviour, expects Imap files
+    else:
+        IDs = Imap_to_List(imap)[0]
+        Population = Imap_to_List(imap)[1]
 
     # categorize all IDs into populations
     popind_dict = {}
@@ -336,23 +412,37 @@ def Imap_to_PopInd_Dict(imap, imap_is_list = False):
     return popind_dict
 
 # writes a nested list containing the columns of the Imap to a file
-def list_To_Imap(imap_list, filename):
+def list_To_Imap(
+        imap_list:      Imap_list, 
+        new_file_name:  file_path
+                ):
+
     output_file = '\n'.join('\t'.join(map(str,row)) for row in zip(imap_list[0],imap_list[1]))
     
-    with open(filename, 'w') as f:
+    with open(new_file_name, 'w') as f:
         f.write(output_file)
+
 
 ## BPP CFILE I-O FUNCTIONS
 
 # read the parameters of a BPP control file into a dict
-def bppcfile_to_dict(input_cfile):
+def bppcfile_to_dict(
+        input_cfile:        BPP_control_file
+                    ) ->    BPP_control_dict:
+
+    # strip the comments to avoid potential confusion of downstream modules
+    lines = read_filter_comments(input_cfile)
+    print(lines)
+    buf = io.StringIO("\n".join(lines))
+
     # import the control file to a dataframe
-    df = pd.read_csv(input_cfile, sep = "=", header=None)
+    df = pd.read_csv(buf, sep = "=", header=None)
     
     # rename columns, convert every cell to text, and remove trailing and leading whitespaces
     df.rename(columns={0: "par", 1: "value"}, inplace=True)
     df = df.applymap(lambda x: stripall(x))
-    
+    print(df)
+
     # if present, reconfigure the rows under "species&tree" to move the required data into the value column
     try:
         st_row = df.index[df["par"] == "species&tree"].tolist()[0]
@@ -363,27 +453,30 @@ def bppcfile_to_dict(input_cfile):
     except:
         pass
     
-    # if a given parameter is present, but does not have a non-null value, return "?" for that parameter
-    for index, row in df.iterrows():
-        try: 
-            if len(row["value"]) == 0:
-                row["value"] = "?"
-        except:
-            row["value"] = "?"
+    print(df)
 
     # make dataframe a dict
-    dict = df.set_index('par').T.to_dict("records")[0]
+    bpp_cdict = df.set_index('par').T.to_dict("records")[0]
 
-    return(dict)
+    # if a given parameter is present, but but has an empty value, return "?" for that parameter
+    for param in bpp_cdict:
+        if len(bpp_cdict[param]) == 0:
+            bpp_cdict[param] = "?"
+
+    return bpp_cdict
 
 # write dict representing the BPP control file to disk
-def dict_to_bppcfile(input_dict, cfile_name):
+def dict_to_bppcfile(
+        input_dict:     BPP_control_dict, 
+        new_file_name:  file_path
+                    ):
+
     # convert to pandas dataframe
     df = pd.DataFrame(list(input_dict.items()))
     
     # write dataframe to disk
-    df.to_csv(cfile_name, sep = "=", header = False, index = False)
-    with open(cfile_name, 'r+') as f:
+    df.to_csv(new_file_name, sep = "=", header = False, index = False)
+    with open(new_file_name, 'r+') as f:
         text = f.read()
         text = re.sub('popsizes=', '               ', text)
         text = re.sub('newick=', '               ', text)
@@ -395,18 +488,24 @@ def dict_to_bppcfile(input_dict, cfile_name):
 ## BPP EXECUTABLE I-O FUNCTIONS
 
 # run BPP with a given control file
-def BPP_run(control_file):
+def BPP_run (
+        control_file:   BPP_control_file
+            ):
+
     try:
-        print("\nSTARTING BPP...\n")
+        print(f"\nSTARTING BPP...\n{col_print.GREEN}")
         subprocess.run(["bpp", "--cfile", control_file])
-        print("\n\t\t -- BPP RUN SUCCESSFUL --")
+        print(f"{col_print.RESETC}\n\t\t -- BPP RUN SUCCESSFUL --")
     
     except:
         print("ERROR: THE FILES SUPPLIED TO BPP CAUSE A CRASH")
         exit()
 
 # extract the most probable species tree from the "outfile" produced by BPP A01 or BPP A11
-def extract_Speciestree(control_file):
+def extract_Speciestree (
+        control_file:           BPP_control_file
+                        ) ->    Tree_newick:
+
     try:
         # find the name of the output file
         BPP_outfile_name = bppcfile_to_dict(control_file)['outfile']
@@ -425,7 +524,10 @@ def extract_Speciestree(control_file):
         exit() 
 
 # extract the best supported species list produced by BPP A11
-def extract_Pops(control_file):
+def extract_Pops(
+        control_file:   BPP_control_file
+                ) ->    Population_list:
+
     try:
         # find the name of the output file
         BPP_outfile_name = bppcfile_to_dict(control_file)['outfile']

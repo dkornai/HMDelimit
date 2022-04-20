@@ -2,10 +2,9 @@
 THIS MODULE CONTAINS SPECIALIZED FUNCTIONS FOR INTERPRETING, 
 AND ANALYSING THE CONTENTS OF SEQUENCE ALIGNMENTS AND IMAP FILES.
 '''
-
 ## DEPENDENCDIES
 
-# PYTHON STANDARD DEPENDENCIES
+# STANDARD LIBRARY DEPENDENCIES
 import re
 import copy
 import random
@@ -14,14 +13,15 @@ from io import StringIO
 from collections import Counter
 from itertools import combinations
 
-# PYTHON LIBRARY DEPENDENCIES
+# EXTERNAL LIBRARY DEPENDENCIES
 import numpy as np
 
-import Bio
+from Bio.Align import MultipleSeqAlignment
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
 from Bio.Phylo.TreeConstruction import DistanceMatrix
 from Bio.Phylo.Consensus import majority_consensus
 from Bio import Phylo
+
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=SyntaxWarning)
     from ete3 import Tree
@@ -31,18 +31,25 @@ from helper_functions import Imap_to_PopInd_Dict
 from helper_functions import Imap_to_IndPop_Dict
 from helper_functions import alignfile_to_MSA
 
-# DATA DEPENDENCIES
+## DATA DEPENDENCIES
 from data_dicts import distance_dict
 from data_dicts import avail_chars
 
-# TYPE HINTING DEPENDENCIES
-from custom_types import Newick_tree
+## TYPING HINTS
+from custom_types import Tree_newick
+from custom_types import Phylip_MSA_file
 from custom_types import Imap_file
+from custom_types import BPP_control_dict_component
+
 
 ## SPECIALIZED HELPER FUNCTIONS
 
 # calculate the pairwise distance between two sequences at shared known characters
-def pairwise_dist(seq_1:str, seq_2:str) -> float:
+def pairwise_dist   (
+        seq_1:              str, 
+        seq_2:              str
+                    ) ->    float:
+
     # collect sites where both sequences have comparable IUPAC codes
     seq_1_correct = set([i for i, x in enumerate(seq_1) if x in avail_chars])
     seq_2_correct = set([i for i, x in enumerate(seq_2) if x in avail_chars])
@@ -55,11 +62,14 @@ def pairwise_dist(seq_1:str, seq_2:str) -> float:
     # get the overall average
     avg_dist = (sum(dist_persite)/len(dist_persite))
 
-    return np.round(avg_dist, decimals = 4)
+    return float(np.round(avg_dist, decimals = 4))
 
 
 # return a list of all paiwise distances in an alignment
-def distanceList(input_MSA) -> list[float]:
+def distanceList(
+        input_MSA:      MultipleSeqAlignment
+                ) ->    list[float]:
+
     # isolate only the sequence strings
     seqlist = [str(sequence.seq) for sequence in input_MSA]
     
@@ -81,9 +91,11 @@ def distanceList(input_MSA) -> list[float]:
 
     # This distance matrix is used in "autoStartingTree" to generate trees using upgma
 
-def getDistanceMatrix(input_MSA) -> DistanceMatrix:
-    dist_list = distanceList(input_MSA)
+def getDistanceMatrix   (
+        input_MSA:              MultipleSeqAlignment
+                        ) ->    DistanceMatrix:
 
+    dist_list = distanceList(input_MSA)
     name_list = [str(seq.id) for seq in input_MSA]
 
     # format matrix to comply with BioPython by adding 0s, and getting values in the correct order
@@ -103,7 +115,11 @@ def getDistanceMatrix(input_MSA) -> DistanceMatrix:
     # control file. The function is also used in "check_GuideTree_Imap_compat" to ensure
     # that GDI values can be calculated. 
 
-def count_Seq_Per_Pop(input_popind_dict, input_MSA_list):
+def count_Seq_Per_Pop   (
+        input_popind_dict, 
+        input_MSA_list:         list[MultipleSeqAlignment]
+                        ) ->    dict:
+
     # create empty dict to hold results
     maxcounts = dict.fromkeys(input_popind_dict, 0)
     
@@ -129,8 +145,12 @@ def count_Seq_Per_Pop(input_popind_dict, input_MSA_list):
     # This function reads the alignment and the IMAP, and extracts the population labels, 
     # and the number of sequences associated with that population in the alignment.
 
-def autoPopParam(imap, alignmentfile, imap_is_list = False):
-    popind_dict = Imap_to_PopInd_Dict(imap, imap_is_list)   
+def autoPopParam(
+        imap, 
+        alignmentfile:  Phylip_MSA_file, 
+                ) ->    BPP_control_dict_component:
+
+    popind_dict = Imap_to_PopInd_Dict(imap)   
     alignment = alignfile_to_MSA(alignmentfile)
     
     # row describing the number and name of populations
@@ -158,7 +178,11 @@ def autoPopParam(imap, alignmentfile, imap_is_list = False):
     # tau is calculated to give a mean that is the largest pairwise distance seen in the alignment. 
     # The output of this function is used in BPP control files
  
-def autoPrior(imapfile:Imap_file, alignmentfile):
+def autoPrior   (
+        imapfile:       Imap_file, 
+        alignmentfile:  Phylip_MSA_file
+                ) ->    BPP_control_dict_component:
+
     alignment = alignfile_to_MSA(alignmentfile)
     
     indpop_dict = Imap_to_IndPop_Dict(imapfile)
@@ -174,7 +198,7 @@ def autoPrior(imapfile:Imap_file, alignmentfile):
 
         for locus in alignment:
             # add the sequences belonging to the current population to a temp aligment
-            temp_aligment = Bio.Align.MultipleSeqAlignment([])
+            temp_aligment = MultipleSeqAlignment([])
             for sequence in locus:
                 id = sequence.id
                 id = id.split("^")[1]
@@ -229,7 +253,11 @@ def autoPrior(imapfile:Imap_file, alignmentfile):
     # The tree output is not very correct, but offers a better starting point that a random tree.
     # This way, less computational resources are wasted during A01.
 
-def autoStartingTree(imapfile:Imap_file, alignmentfile) -> Newick_tree:
+def autoStartingTree(
+        imapfile:           Imap_file, 
+        alignmentfile:      Phylip_MSA_file
+                    ) ->    Tree_newick:
+
     # associate all individuals with populations
     indpop_dict = Imap_to_IndPop_Dict(imapfile)
 
@@ -260,7 +288,7 @@ def autoStartingTree(imapfile:Imap_file, alignmentfile) -> Newick_tree:
         selected_ids = [random.choice(popmap_at_locus[key]) for key in popmap_at_locus]
 
         # create the alignment containing a sequence from the random individual
-        temp_align = Bio.Align.MultipleSeqAlignment([])
+        temp_align = MultipleSeqAlignment([])
         for seqObj in locus:
             indiv_id = str(seqObj.id).split("^")[1]
             

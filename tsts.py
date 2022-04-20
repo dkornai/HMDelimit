@@ -27,7 +27,7 @@
 #       check_Numeric("asdasd", "i", min= 0, max= 0.2),
 # )
 
-# # test of criteriaMatch
+# # test of make_decision
 # test_dict_for_criteria =   {"+G1+G2+A":{"gdi_1": True,  "gdi_2": True,  "age": True},
 #                             "+G1+G2-A":{"gdi_1": True,  "gdi_2": True,  "age": False},
 #                             "+G1-G2+A":{"gdi_1": True,  "gdi_2": False, "age": True},
@@ -43,7 +43,7 @@
 #                             "?G1?G2-A":{"gdi_1": "?",   "gdi_2": "?",   "age": False},
 #                }
 # for criteria in HM_decision_criteria:
-#     print(criteria, criteriaMatch(test_dict_for_criteria, hm_param = {"HM_decision":criteria}))
+#     print(criteria, make_decision(test_dict_for_criteria, hm_param = {"HM_decision":criteria}))
 
 # from helper_functions import bppcfile_to_dict
 # print(bppcfile_to_dict("Test_Data/Lizard_2010/D_L10_A11.ctl"))

@@ -1,3 +1,18 @@
+'''
+THE GOAL OF THIS MODULE IS TO REPLACE POPULATION NAMES WITH UNIQUE, NON-OVERLAPPING IDS,
+AND ALSO PERFORM THE REVERSE DECODING STEP. THIS IS NECESSARY, BECAUSE SIMULTANEOUS
+CHANGES TO THE DELIMITATION AND THE SPECIES TREE DURING THE A11 STAGE MAKE IT
+IMPOSSIBLE TO SURELY DECIDE WHAT POPULATIONS WERE MERGED TO CREATE A NEW POPULATION.
+
+FOR EXAMPLE: 
+    THREE POPULATIONS ARE NAMED: MOUSE, MOUSE1, MOUSE12
+    THEY ARE MERGED INTO TWO POPULATIONS: MOUSE12MOUSE, MOUSE1
+    THIS CREATES AN IDENTIFIABILITY PROBLEM, AS SEARCHING FOR MOUSE1 
+    IN THE RESULTING POPULATIONS WILL GIVE TWO RESULTS
+
+    HAVING NON-OVERLAPPING IDS SOLVES THIS PROBLEM
+
+'''
 ## DEPENDENCDIES
 
 # PYTHON STANDARD DEPENDENCIES
@@ -15,23 +30,20 @@ from helper_functions import Imap_to_PopInd_Dict
 from helper_functions import Imap_to_List
 
 # TYPE HINTING DEPENDENCIES
-from custom_types import BPPControl_dict
+from custom_types import BPP_control_dict
 from custom_types import Imap_list
-from custom_types import Population_list
-from custom_types import Newick_tree
 from custom_types import Imap_file
+from custom_types import Population_list
+from custom_types import Tree_newick
+from custom_types import Alias_dict
 
 ## ENCODING FUNCTIONS
 
-# generate unique IDs that are used to avoid possible overlaps between population names in the user supplied Imap
-'''
-This is necessary as BPP A11 does not return the imap corresponding to the final delimitation, 
-only the newick tree, and the list of accepted populations. This is a problem, because A11 
-might also change the tree topology, and not just merge populations according to the original 
-tree. This becomes a problem when we want to generate the new imap, which includes the population
-merges implemented in A11.
-'''
-def generate_nonoverlap_IDs(imapfile:Imap_file):
+# generate unique IDs for each population name. these are used to avoid possible overlaps between population names in the user supplied Imap
+def generate_nonoverlap_IDs (
+    imapfile:                       Imap_file
+                            ) ->    Alias_dict:
+
     pops = list(Imap_to_PopInd_Dict(imapfile).keys())
     real_tempname_dict = {}
     for i, pops in enumerate(pops):
@@ -41,7 +53,11 @@ def generate_nonoverlap_IDs(imapfile:Imap_file):
     return real_tempname_dict
 
 # remap the population names in the BPP control file to their unqie IDs
-def enforce_no_overlaps_BPP_cfile(input_BPP_cdict:BPPControl_dict, real_tempname_dict:dict):
+def enforce_no_overlaps_BPP_cfile   (
+        input_BPP_cdict:                    BPP_control_dict, 
+        real_tempname_dict:                 Alias_dict
+                                    ) ->    BPP_control_dict:
+
     cdict = copy.deepcopy(input_BPP_cdict)
 
     # The names on the s&t line can be subbed using regex, as there is always a whitespace between the names
@@ -73,7 +89,11 @@ def enforce_no_overlaps_BPP_cfile(input_BPP_cdict:BPPControl_dict, real_tempname
 
 
 # remap the population names in the imap file to their unique IDs
-def enforce_no_overlaps_Imap(imapfile:Imap_file, real_tempname_dict:dict):
+def enforce_no_overlaps_Imap(
+        imapfile:                   Imap_file, 
+        real_tempname_dict:         Alias_dict
+                            ) ->    Imap_list:
+
     imaplist = Imap_to_List(imapfile)
     
     # scan through the populations column and replace population names with their non-overlapping IDs
@@ -88,7 +108,11 @@ def enforce_no_overlaps_Imap(imapfile:Imap_file, real_tempname_dict:dict):
 
 
 # final wrapper function intended to implement unique ID encoding for the BPP control file and Imap simultaneously
-def uniqueID_encoding(input_BPP_cdict:BPPControl_dict, imap_name:str):
+def uniqueID_encoding   (
+    input_BPP_cdict:            BPP_control_dict, 
+    imap_name:                  str
+                        ) ->    tuple[BPP_control_dict, Imap_list, Alias_dict]:
+
     remap_dict = generate_nonoverlap_IDs(input_BPP_cdict["Imapfile"])
     BPP_cdict  = enforce_no_overlaps_BPP_cfile(input_BPP_cdict, remap_dict)
     imaplist   = enforce_no_overlaps_Imap(input_BPP_cdict["Imapfile"], remap_dict)
@@ -100,7 +124,11 @@ def uniqueID_encoding(input_BPP_cdict:BPPControl_dict, imap_name:str):
 ## DECODING FUNCTIONS
 
 # do a remap on merged population IDs using a dict that only includes population ID components
-def componentwise_remap(label, remap_dict:dict):
+def componentwise_remap (
+        label:                  str, 
+        remap_dict:             Alias_dict
+                        ) ->    str:
+
     # split into 6 character chunks, to avoid possible contamination by overlaps
     label_components = [label[i:i+6] for i in range(0, len(label), 6)]
     # replace using the dict, component by component
@@ -111,7 +139,12 @@ def componentwise_remap(label, remap_dict:dict):
 
 # get the output of BPP A11 (which had the unique IDs injected), and infer the Imap that would
 # be produced using the original naming scheme of the user.
-def infer_Imap_from_A11_output(imap_list:Imap_list, new_pops:Population_list, real_tempname_dict:dict):
+def decode_Imap_from_A11_output (
+    imap_list:                          Imap_list, 
+    new_pops:                           Population_list, 
+    real_tempname_dict:                 Alias_dict
+                                ) ->    Imap_list:
+
     imaplist = imap_list
     unique_pops = imaplist[1]
 
@@ -137,7 +170,11 @@ def infer_Imap_from_A11_output(imap_list:Imap_list, new_pops:Population_list, re
 
 
 # remap the unique IDs injected into A11 to their original names, this is challenging due to merged names
-def infer_Tree_from_A11_output(newick:Newick_tree, real_tempname_dict:dict) -> Newick_tree:
+def decode_Tree_from_A11_output (
+        newick:                         Tree_newick, 
+        real_tempname_dict:             Alias_dict
+                                ) ->    Tree_newick:
+
     tempname_real_dict = dict((v, k) for k, v in real_tempname_dict.items())
     
     tree = Tree(newick)
@@ -149,10 +186,16 @@ def infer_Tree_from_A11_output(newick:Newick_tree, real_tempname_dict:dict) -> N
 
 
 # final wrapper function to decode the machine generated unique IDs into the original user supplied ones
-def uniqueID_decoding(imap_list:Imap_list, new_pops:Population_list, newick_tree:Newick_tree, remap_dict:dict):
-    imap = infer_Imap_from_A11_output(imap_list, new_pops, remap_dict)
-    tree = infer_Tree_from_A11_output(newick_tree, remap_dict)
+def uniqueID_decoding   (
+        imap_list:              Imap_list, 
+        new_pops:               Population_list, 
+        newick_tree:            Tree_newick, 
+        remap_dict:             Alias_dict,
+                        ) ->    tuple[Tree_newick, Imap_list]:
 
+    tree = decode_Tree_from_A11_output(newick_tree, remap_dict)
+    imap = decode_Imap_from_A11_output(imap_list, new_pops, remap_dict)
+    
     return tree, imap
 
 
@@ -169,9 +212,9 @@ def uniqueID_decoding(imap_list:Imap_list, new_pops:Population_list, newick_tree
 
 # print(enforce_no_overlaps_Imap("D_TMS_imap_mod.txt", generate_nonoverlap_IDs("D_TMS_imap_mod.txt")))
 
-# print(infer_Imap_from_A11_output(Imap_to_List("D_TMS_imap_mod_un.txt"), 
+# print(decode_Imap_from_A11_output(Imap_to_List("D_TMS_imap_mod_un.txt"), 
 #                                  ['PN_001', 'PN_002', 'PN_003','PN_004', 'PN_000', 'PN_005', 'PN_006'], 
 #                                  generate_nonoverlap_IDs("D_TMS_imap_mod.txt")))
-# print(infer_Imap_from_A11_output(Imap_to_List("D_TMS_imap_mod_un.txt"), 
+# print(decode_Imap_from_A11_output(Imap_to_List("D_TMS_imap_mod_un.txt"), 
 #                                  ['PN_001', 'PN_002', 'PN_003PN_004', 'PN_000', 'PN_005PN_006'], 
 #                                  generate_nonoverlap_IDs("D_TMS_imap_mod.txt")))

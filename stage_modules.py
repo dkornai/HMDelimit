@@ -1,10 +1,13 @@
 ## DEPENDENCIES
-# modules
+# STANDARD LIBRARY
 import os
 import shutil
-from turtle import color
 
-from helper_functions import Imap_to_IndPop_Dict, Imap_to_List, Imap_to_PopInd_Dict, create_TargetDir, pretty
+# HELPER FUNCTIONS
+from helper_functions import Imap_to_IndPop_Dict
+from helper_functions import Imap_to_PopInd_Dict
+from helper_functions import create_TargetDir
+from helper_functions import pretty
 from helper_functions import get_HM_parameters
 from helper_functions import dict_to_bppcfile
 from helper_functions import list_To_Imap
@@ -13,37 +16,48 @@ from helper_functions import BPP_run
 from helper_functions import extract_Speciestree
 from helper_functions import extract_Pops
 
+# BPP CONTROL FILE RELATED FUNCTIONS
 from bpp_cfile_module import get_known_BPP_param 
 from bpp_cfile_module import generate_unkown_BPP_param
 from bpp_cfile_module import generate_unknown_BPP_tree
 from bpp_cfile_module import proposal_compliant_BPP_param
 
+# UNIQUE ID ENCODING AND DECONDING FUNCTIONS
 from uniqueID_module import uniqueID_encoding
 from uniqueID_module import uniqueID_decoding 
 
+# PROPOSAL FUNCTIONS
 from proposal_module import HMproposal
 from proposal_module import get_HM_StartingState
 
+# DECISION FUNCTIONS
 from decision_module import decisionModule
 
-from custom_types import Imap_list
-from custom_types import Newick_tree
-from custom_types import Population_list
-from custom_types import MasterControl_file
+## DATA DEPENDENCIES
+from data_dicts import col_print
 
-from data_dicts import colors
+## TYPE HINTS
+from custom_types import Imap_list
+from custom_types import Tree_newick
+from custom_types import Population_list
+from custom_types import Master_control_file
+from custom_types import HM_mode
+
 
 # infer the starting topology before any delimitation steps
-def StartingTopolgy(input_mcfile:MasterControl_file) -> Newick_tree:
+def StartingTopolgy (
+        input_mcfile:       Master_control_file
+                    ) ->    Tree_newick:
+
     parent_dir = os.getcwd()
-    print(f"{colors.OKBLUE}\nBEGINNING STARTING PHYLOGENY INFERENCE\n{colors.ENDC}")
+    print(f"{col_print.BLUE}\nBEGINNING STARTING PHYLOGENY INFERENCE\n{col_print.RESETC}")
     
     # get master control file parameters
     mc_dict = read_MasterControl(input_mcfile)
     
-    # create the target directory specific to the step
+    # create the target directory specific to the step, and the name of the MCF
     target_dir = f'{input_mcfile[0:-4]}_0_StartPhylo'
-    create_TargetDir(target_dir_name=target_dir)
+    create_TargetDir(target_dir)
 
     # set up the BPP control file specific to the A01 stage
     BPP_A01_cfile_name = "BPP_A01_Phylo_Inference.ctl"
@@ -75,17 +89,20 @@ def StartingTopolgy(input_mcfile:MasterControl_file) -> Newick_tree:
 
 
 # infer the starting delimitation. This consists of a guide tree and an associated Imap
-def StartingDelimitation(input_mcfile:MasterControl_file, 
-                         starting_tree:Newick_tree = None):
+def StartingDelimitation(
+        input_mcfile:           Master_control_file, 
+        starting_tree:          Tree_newick = None
+                        ) ->    tuple[Tree_newick, Imap_list]:
+
     parent_dir = os.getcwd()
-    print(f"{colors.OKBLUE}\nBEGINNING STARTING DELIMITATION{colors.ENDC}\n")
+    print(f"{col_print.BLUE}\nBEGINNING STARTING DELIMITATION{col_print.RESETC}\n")
 
     # get master control file parameters
     mc_dict = read_MasterControl(input_mcfile)
     
     # create the target directory specific to the step
     target_dir = f'{input_mcfile[0:-4]}_1_StartDelim'
-    create_TargetDir(target_dir_name=target_dir)
+    create_TargetDir(target_dir)
 
     # set up the BPP control file specific to the A11 stage
     BPP_A11_cfile_name = "BPP_A11_Starting_Delimitation.ctl"
@@ -126,20 +143,24 @@ def StartingDelimitation(input_mcfile:MasterControl_file,
     print("\nRESULTS OF THE STARTING DELIMITATION STAGE:")
     print(f"\t\t\nGUIDE TREE:\n\n{guide_tree}")
     print(f"\t\t\nIMAP:\n")
-    pretty(Imap_to_PopInd_Dict(imap, imap_is_list = True))
+    pretty(Imap_to_PopInd_Dict(imap))
     print(f"\n-- STARTING DELIMITATION SUCCESSFULLY COMPLETED --")
+
     return guide_tree, imap, 
 
 
-# infer the starting topology before any delimitation steps
-def HMIteration(input_mcfile:MasterControl_file, 
-                input_guide_tree:Newick_tree, 
-                input_indpop_dict, 
-                input_accepted_pops:Population_list, 
-                halt_pop_number:int, 
-                step:int):
+# perform one iteration of the hierarchical method.
+def HMIteration (
+        input_mcfile:           Master_control_file, 
+        input_guide_tree:       Tree_newick, 
+        input_indpop_dict, 
+        input_accepted_pops:    Population_list, 
+        halt_pop_number:        int, 
+        step:                   int
+                ) ->            tuple[Population_list, bool]:
+
     parent_dir = os.getcwd()
-    print(f"{colors.OKBLUE}\nBEGINNING STEP {step} OF THE HIERARCHICAL METHOD{colors.ENDC}\n")
+    print(f"{col_print.BLUE}\nBEGINNING STEP {step} OF THE HIERARCHICAL METHOD{col_print.RESETC}\n")
     
     # get master control file parameters
     mc_dict = read_MasterControl(input_mcfile)
@@ -172,6 +193,7 @@ def HMIteration(input_mcfile:MasterControl_file,
 
     #-----------------------------#
     os.chdir(target_dir)
+        
         # run BPP 
     BPP_run(proposed_cfile_name)
     
@@ -189,15 +211,18 @@ def HMIteration(input_mcfile:MasterControl_file,
 
 ### FIX FIX ADD PRINTOUT OF INTERMEDIATE RESULTS
 
-def HierarchicalMethod(input_mcfile:MasterControl_file, 
-                       input_guide_tree:Newick_tree = None, 
-                       input_imap:Imap_list = None):
-    print(f"\n{colors.OKBLUE}BEGINNING THE HIERARCHICAL METHOD!{colors.ENDC}")
+def HierarchicalMethod  (
+        input_mcfile:       Master_control_file, 
+        input_guide_tree:   Tree_newick = None, 
+        input_imap:         Imap_list = None,
+                        ):
+    
+    print(f"\n{col_print.BLUE}BEGINNING THE HIERARCHICAL METHOD!{col_print.RESETC}")
  
     mc_dict = read_MasterControl(input_mcfile)
     
     guide_tree = input_guide_tree
-    indpop_dict = Imap_to_IndPop_Dict(input_imap, imap_is_list = True)
+    indpop_dict = Imap_to_IndPop_Dict(input_imap)
     
     accepted_pops, halt_pop_number = get_HM_StartingState(guide_tree, get_HM_parameters(mc_dict)["mode"])
 
@@ -214,6 +239,6 @@ def HierarchicalMethod(input_mcfile:MasterControl_file,
                                                 step                = step)
         step += 1
     #-----------------------------#
-    print(f"{colors.OKBLUE}-- HM COMPLETED! --{colors.ENDC}")
+    print(f"{col_print.BLUE}-- HM COMPLETED! --{col_print.RESETC}")
 
     #### FIX FIX FIX ADD PRINTOUT OF FINAL RESULTS

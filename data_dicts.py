@@ -1,3 +1,39 @@
+# custom class from colored printing
+class col_print:
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    RESETC = '\033[0m'
+
+# the pairs of MCF parameter names:keyphrases that are searched in the control file to read them
+MCF_param_dict ={# parameters for the pipeline
+                "file_align"    :"alignment file",
+                "file_imap"     :"Imap file", 
+                "tree_start"    :"starting tree",
+                "tree_HM"       :"HM guide tree",  
+                "ctl_file_phylo":"BPP A01 starting phylogeny inference",
+                "ctl_file_delim":"BPP A11 starting delimitation",           
+                "ctl_file_HM"   :"BPP A00 HM parameter inference",  
+                # parameters for the merge decisions
+                "mode"          :"HM mode",
+                "GDI_thresh"    :"GDI threshold",
+                "generations"   :"HM generation threshold",
+                "mutationrate"  :"HM mutation",
+                "HM_decision"   :"HM decision parameters",
+                # parameters passed to BPP instances
+                "seed"          :"seed",
+                "thetaprior"    :"thetaprior", 
+                "tauprior"      :"tauprior", 
+                "finetune"      :"finetune",
+                "sampfreq"      :"sampfreq", 
+                "nsample"       :"nsample",                            
+                "burnin"        :"burnin",
+                "threads"       :"threads",
+                }
+    
+
 ## DATA USED IN THE MASTER CONTROL FILE CHECKING SECTION
 
 # contains the written feedback for the checker of the master control file
