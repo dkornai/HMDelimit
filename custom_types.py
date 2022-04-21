@@ -1,3 +1,7 @@
+'''
+THESE CUSTOM TYPES ARE USED AS TYPE HINTS TO MAKE 
+CODE MORE UNDERSTANDABLE
+'''
 from typing import NewType
 
 # generic filepath type
@@ -38,11 +42,10 @@ BPP_mode = NewType("BPP_mode", str)
 # custom type for the mode of the HM pipeline (merge or split)
 HM_mode = NewType("HM_mode", str)
 
-
 # custom type for species names
 Species_name = NewType("Species_name", str)
 
-# custom type for the decision parameters of the HM stage
+# custom types for the decision module
 HM_decision_parameters = NewType("HM_decision_parameters", dict)
 Demographic_parameters = NewType("Demographic_parameters", dict)
 HM_criteria_matched = NewType("HM_criteria_matched", dict)

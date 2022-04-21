@@ -125,7 +125,7 @@ The function also returns a source dict which tells the origin of the paramter (
 This is useful when checking compatibilities and misspecifications in the BPP command file,
 as the user can be pointed to the source of the incompatible or badly specified parameter.
 
-The "mask_A11" option is used when checking the user supplied parameters of the A00 stage,
+The "after_A11" option is used when checking the user supplied parameters of the A00 stage,
 when an A11 stage is also used before. In this case, the output from the A11 will always be
 formatted by the pipeline to be compatible with the next A00 stage, so the checking of
 those parameters becomes unnecessary. However, when runnin only the A00 stage, it is
@@ -135,13 +135,13 @@ necessary to check them.
 def get_user_BPP_param  (
         input_mc_dict:          Master_control_dict, 
         BPP_mode:               BPP_mode,
-        mask_A11:               bool = False # optional ability to mask any parameters that would be inherited from the A11 stage  
+        after_A11:              bool = False # optional ability to mask any parameters that would be inherited from the A11 stage  
                         ) ->    tuple[BPP_control_dict, dict]:    
     
     # 0A) find any BPP parameters available in the master control dict
     BPP_cdict = overwrite_dict(empty_BPP_cfile_dict, input_mc_dict)
     # 0B) keep track of the origin of newly found parameters
-    sourcedict = {param:"MCF" for param in BPP_cdict if (BPP_cdict[param] != empty_BPP_cfile_dict[param])} 
+    sourcedict = {param:(" - " if (BPP_cdict[param] == "?") else "MCF") for param in BPP_cdict }  
 
     # 1A) if the master control dict points to a BPP control file...
     stage_code = {"A01":'ctl_file_phylo', "A11":'ctl_file_delim',"A00":'ctl_file_HM'}
@@ -166,7 +166,7 @@ def get_user_BPP_param  (
 
     # 3) if the option to mask the parameters that A00 inherits after running A11 is on, make the following parameters unknown
         # When A00 is run after A11, These parameters depend on the results of A11, which are unpredictable in advance.  
-    if mask_A11 == True:
+    if after_A11 == True:
         BPP_cdict["Imapfile"] = "?"
         BPP_cdict["species&tree"] = "?"
         BPP_cdict["newick"] = "?"

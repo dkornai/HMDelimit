@@ -1,11 +1,14 @@
 # custom class from colored printing
-class col_print:
+class clprnt:
     BLUE = '\033[94m'
     CYAN = '\033[96m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     RED = '\033[91m'
-    RESETC = '\033[0m'
+    end = '\033[0m'
+
+
+## MASTER CONTROL FILE RELATED DATA
 
 # the pairs of MCF parameter names:keyphrases that are searched in the control file to read them
 MCF_param_dict =    {
@@ -16,7 +19,8 @@ MCF_param_dict =    {
 "tree_HM"       :"HM guide tree",  
 "ctl_file_phylo":"BPP A01 starting phylogeny inference",
 "ctl_file_delim":"BPP A11 starting delimitation",           
-"ctl_file_HM"   :"BPP A00 HM parameter inference",  
+"ctl_file_HM"   :"BPP A00 HM parameter inference",
+"target_dir"    :"target directory",  
 # parameters for the merge decisions
 "mode"          :"HM mode",
 "GDI_thresh"    :"GDI threshold",
@@ -33,9 +37,6 @@ MCF_param_dict =    {
 "burnin"        :"burnin",
 "threads"       :"threads",
                     }
-    
-
-## DATA USED IN THE MASTER CONTROL FILE CHECKING SECTION
 
 # contains the written feedback for the checker of the master control file
 master_Control_feedback =   {
@@ -60,18 +61,25 @@ master_Control_feedback =   {
                     0 :"(~) HM guide tree not specified",
                     1 :"[*] HM guide tree correctly specified",
                     },
-"ctl_file_phylo":  {-1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
+"ctl_file_phylo":  {-2:"[X] ERROR: THE FILE CAN NOT BE INTERPRETED AS A BPP CONTROL FILE\n\n\t Please consult the BPP manual for advice on BPP control files, or leave empty\n",
+                    -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) BPP A01 Starting phylogeny inference control file not specified",
                     1 :"[*] BPP A01 Starting phylogeny inference control file successfully found",
                     },
-"ctl_file_delim":  {-1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
+"ctl_file_delim":  {-2:"[X] ERROR: THE FILE CAN NOT BE INTERPRETED AS A BPP CONTROL FILE\n\n\t Please consult the BPP manual for advice on BPP control files, or leave empty\n",
+                    -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) BPP A01 Starting delimitation control file not specified",
                     1 :"[*] BPP A11 Starting delimitation control file successfully found",
                     },   
-"ctl_file_HM":     {-1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
+"ctl_file_HM":     {-2:"[X] ERROR: THE FILE CAN NOT BE INTERPRETED AS A BPP CONTROL FILE\n\n\t Please consult the BPP manual for advice on BPP control files, or leave empty\n",
+                    -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) BPP A00 HM Parameter Inference control file not specified",
                     1 :"[*] BPP A00 HM Parameter Inference control file successfully found",
                     }, 
+"target_dir":      {-1:"TEST",
+                    0 :"TEST",
+                    1 :"TEST"
+                    },
 # parameters for the merge decisions
 "mode":            {-1:"[X] ERROR: HM MODE INCORRECTLY SPECIFIED\n\n\t Please specify as 'merge' or 'split', or leave empty\n",
                     0 :"(~) HM mode not specified",
@@ -130,8 +138,7 @@ master_Control_feedback =   {
                     },
                             }
 
-## DATA USED IN THE HM SECTION
-
+## DATA USED IN THE HIERARCHICAL METHOD SECTION
 # the empty HM decision parameter dict 
 empty_HM_parameters   = {
 "mode":            "?",
@@ -188,7 +195,7 @@ valid_BPP_param_names = [
 'finetune', 
 'gammaprior', 
 'heredity', 
-'imapfile', 
+'Imapfile', 
 'locusrate', 
 'mcmcfile', 
 'nloci', 
@@ -209,18 +216,107 @@ valid_BPP_param_names = [
 'usedata',
                         ]
 
+# contains the list of parameters that need to be present in a BPP control file
+empty_BPP_cfile_dict =  {
+'seed':                 '?',
+'seqfile':              '?', 
+'Imapfile':             '?', 
+'outfile':              '?', 
+'mcmcfile':             '?',
+'speciesdelimitation':  '?',
+'speciestree' :         '?',
+'species&tree':         '?', 
+'popsizes':             '?', 
+'newick':               '?', 
+'usedata':              '?', 
+'nloci':                '?',
+'locusrate':            '?', 
+'cleandata':            '?', 
+'thetaprior':           '?', 
+'tauprior':             '?', 
+'finetune':             '?', 
+'print':                '?', 
+'burnin':               '?', 
+'sampfreq':             '?', 
+'nsample':              '?', 
+'threads':              '?'
+                        }
+
+# contains default values shared by all modes of BPP
+default_BPP_param =    {
+'seed':                 '?',
+'seqfile':              '?', 
+'Imapfile':             '?', 
+'outfile':              '?', 
+'mcmcfile':             '?',
+'speciesdelimitation':  '?',
+'speciestree' :         '?',
+'species&tree':         '?', 
+'popsizes':             '?', 
+'newick':               '?', 
+'usedata':              '?', 
+'nloci':                '?',
+'locusrate':            '0',
+'cleandata':            '0', 
+'thetaprior':           '?', 
+'tauprior':             '?', 
+'finetune':             '1: .01 .0001 .005 .0005 .2 .01 .01 .01', 
+'print':                '1 0 0 0', 
+'burnin':               '5000', 
+'sampfreq':             '2', 
+'nsample':              '5000', 
+'threads':              '1 ',
+                        }
+
+# contains default values for parameters of the BPP A01 control file
+default_BPP_A01_param =    {
+'outfile':              'starting_tree_out.txt', 
+'mcmcfile':             'starting_tree_mcmc.txt',
+'speciesdelimitation':  '0',
+'speciestree' :         '1',
+'usedata':              '1', 
+                                }
+
+# contains default values for parameters of the A11 BPP control file
+default_BPP_A11_param =    {
+'outfile':              'starting_delimitation_out.txt', 
+'mcmcfile':             'starting_delimitation_mcmc.txt',
+'speciesdelimitation':  '1 1 2 0.5',
+'speciestree' :         '1',
+'usedata':              '1', 
+                                }
+
+# contains default values for parameters of the A00 BPP control file
+default_BPP_A00_param =    {
+'outfile':              'proposal_out.txt', 
+'mcmcfile':             'proposal_mcmc.txt',
+'speciesdelimitation':  '0',
+'speciestree' :         '0',
+'usedata':              '1', 
+                                }
+
+# final wrapper dict that enables mode flag based access to defaults
+default_BPP_modespecific_param =    {
+"A01":  default_BPP_A01_param,
+"A11":  default_BPP_A11_param,
+"A00":  default_BPP_A00_param,
+                                    }  
+
+
 # contains the written feedback for the checker of the master control file
 BPP_Control_feedback = {# parameters for the pipeline
 "seed":                {-1:"[X] ERROR: BPP SEED INCORRECTLY SPECIFIED\n\n\t Please use a positive or negative integer value, or leave empty\n",
                        0 :"_",
                        1 :"[*] BPP seed correctly specified",
                        },
-"seqfile":            {-2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID MSA\n\n\t Please give the name of a correctly phylip formatted MSA file.\n",
+"seqfile":            {-5:"[X] ERROR: BPP CANNOT RUN WITHOUT A SPECIFIED SEQFILE\n\n\t Please specify a seqfile in the Master control file or stage specific control file\n",
+                       -2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID MSA\n\n\t Please give the name of a correctly phylip formatted MSA file.\n",
                        -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                        0 :"_",
                        1 :"[*] MSA file found",
                        },
-"Imapfile":           {-2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID IMAP\n\n\t Please give the name of a correctly formatted imap file.\n",
+"Imapfile":           {-5:"[X] ERROR: BPP CANNOT RUN WITHOUT A SPECIFIED IMAP\n\n\t Please specify an Imap in the Master control file or stage specific control file\n",
+                       -2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID IMAP\n\n\t Please give the name of a correctly formatted imap file.\n",
                        -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                        0 :"_",
                        1 :"[*] Imap file found",
@@ -310,91 +406,7 @@ BPP_Control_feedback = {# parameters for the pipeline
                        },
                           }
 
-# contains the list of parameters that need to be present in a BPP control file
-empty_BPP_cfile_dict =  {
-'seed':                 '?',
-'seqfile':              '?', 
-'Imapfile':             '?', 
-'outfile':              '?', 
-'mcmcfile':             '?',
-'speciesdelimitation':  '?',
-'speciestree' :         '?',
-'species&tree':         '?', 
-'popsizes':             '?', 
-'newick':               '?', 
-'usedata':              '?', 
-'nloci':                '?',
-'locusrate':            '?', 
-'cleandata':            '?', 
-'thetaprior':           '?', 
-'tauprior':             '?', 
-'finetune':             '?', 
-'print':                '?', 
-'burnin':               '?', 
-'sampfreq':             '?', 
-'nsample':              '?', 
-'threads':              '?'
-                        }
-
-# contains default values shared by all modes of BPP
-default_BPP_param =    {
-'seed':                 '?',
-'seqfile':              '?', 
-'Imapfile':             '?', 
-'outfile':              '?', 
-'mcmcfile':             '?',
-'speciesdelimitation':  '?',
-'speciestree' :         '?',
-'species&tree':         '?', 
-'popsizes':             '?', 
-'newick':               '?', 
-'usedata':              '?', 
-'nloci':                '?',
-'locusrate':            '0',
-'cleandata':            '0', 
-'thetaprior':           '?', 
-'tauprior':             '?', 
-'finetune':             '1: .01 .0001 .005 .0005 .2 .01 .01 .01', 
-'print':                '1 0 0 0', 
-'burnin':               '5000', 
-'sampfreq':             '2', 
-'nsample':              '5000', 
-'threads':              '1 ',
-    }
-# contains default values for parameters of the BPP A01 control file
-default_BPP_A01_param =    {
-'outfile':              'starting_tree_out.txt', 
-'mcmcfile':             'starting_tree_mcmc.txt',
-'speciesdelimitation':  '0',
-'speciestree' :         '1',
-'usedata':              '1', 
-                                }
-
-# contains default values for parameters of the A11 BPP control file
-default_BPP_A11_param =    {
-'outfile':              'starting_delimitation_out.txt', 
-'mcmcfile':             'starting_delimitation_mcmc.txt',
-'speciesdelimitation':  '1 1 2 0.5',
-'speciestree' :         '1',
-'usedata':              '1', 
-                                }
-
-# contains default values for parameters of the A00 BPP control file
-default_BPP_A00_param =    {
-'outfile':              'proposal_out.txt', 
-'mcmcfile':             'proposal_mcmc.txt',
-'speciesdelimitation':  '0',
-'speciestree' :         '0',
-'usedata':              '1', 
-                                }
-
-# final wrapper dict that enables mode flag based access to defaults
-default_BPP_modespecific_param =    {
-"A01":  default_BPP_A01_param,
-"A11":  default_BPP_A11_param,
-"A00":  default_BPP_A00_param,
-                                    }  
-
+## DATA USED IN THE PAIRWISE DISTANCE CALCULATION
 # available characters:
 avail_chars = set(["T", "C", "G", "A", "R", "Y", "W", "S", "M", "K", "H", "B", "D", "V"])
 

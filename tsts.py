@@ -144,6 +144,10 @@
 # print(tree)
 # print(pops)
 
+# from check_helper_functions import check_BPP_ctl_validity
+# check_BPP_ctl_validity("Test_Data/Test_BPP_Control/ctl_1.ctl")
+# check_BPP_ctl_validity("Test_Data/Test_BPP_Control/ctl_bad_1.ctl")
+
 
 # ## TESTS FOR "ALIGN_IMAP_MODULE"
 # '''

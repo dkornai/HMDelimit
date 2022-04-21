@@ -34,7 +34,7 @@ from proposal_module import get_HM_StartingState
 from decision_module import decisionModule
 
 ## DATA DEPENDENCIES
-from data_dicts import col_print
+from data_dicts import clprnt
 
 ## TYPE HINTS
 from custom_types import Imap_list
@@ -50,7 +50,7 @@ def StartingTopolgy (
                     ) ->    Tree_newick:
 
     parent_dir = os.getcwd()
-    print(f"{col_print.BLUE}\nBEGINNING STARTING PHYLOGENY INFERENCE\n{col_print.RESETC}")
+    print(f"{clprnt.BLUE}\nBEGINNING STARTING PHYLOGENY INFERENCE\n{clprnt.end}")
     
     # get master control file parameters
     mc_dict = read_MasterControl(input_mcfile)
@@ -95,7 +95,7 @@ def StartingDelimitation(
                         ) ->    tuple[Tree_newick, Imap_list]:
 
     parent_dir = os.getcwd()
-    print(f"{col_print.BLUE}\nBEGINNING STARTING DELIMITATION{col_print.RESETC}\n")
+    print(f"{clprnt.BLUE}\nBEGINNING STARTING DELIMITATION{clprnt.end}\n")
 
     # get master control file parameters
     mc_dict = read_MasterControl(input_mcfile)
@@ -160,7 +160,7 @@ def HMIteration (
                 ) ->            tuple[Population_list, bool]:
 
     parent_dir = os.getcwd()
-    print(f"{col_print.BLUE}\nBEGINNING STEP {step} OF THE HIERARCHICAL METHOD{col_print.RESETC}\n")
+    print(f"{clprnt.BLUE}\nBEGINNING STEP {step} OF THE HIERARCHICAL METHOD{clprnt.end}\n")
     
     # get master control file parameters
     mc_dict = read_MasterControl(input_mcfile)
@@ -215,7 +215,7 @@ def HierarchicalMethod  (
         input_imap:         Imap_list = None,
                         ):
     
-    print(f"\n{col_print.BLUE}BEGINNING THE HIERARCHICAL METHOD!{col_print.RESETC}")
+    print(f"\n{clprnt.BLUE}BEGINNING THE HIERARCHICAL METHOD!{clprnt.end}")
  
     mc_dict = read_MasterControl(input_mcfile)
 
@@ -247,4 +247,4 @@ def HierarchicalMethod  (
                                                 step                = step)
         step += 1
     #-----------------------------#
-    print(f"{col_print.BLUE}-- HM COMPLETED! --{col_print.RESETC}")
+    print(f"{clprnt.BLUE}-- HM COMPLETED! --{clprnt.end}")

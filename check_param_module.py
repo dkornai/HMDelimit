@@ -10,8 +10,7 @@ MODE OF BPP TO THE NEXT
 from helper_functions import pretty_Table
 from helper_functions import read_MasterControl
 
-# CHECKING FUNCTION DEPENDENCIES
-from check_helper_functions import assert_Imap_Seq_compat
+# CHECKING HELPER DEPENDENCIES
 from check_helper_functions import check_Newick
 from check_helper_functions import check_Numeric
 from check_helper_functions import check_Tauprior
@@ -20,25 +19,27 @@ from check_helper_functions import check_GDI_params
 from check_helper_functions import check_Finetune
 from check_helper_functions import check_Threads
 from check_helper_functions import check_BPP_mode
-from check_helper_functions import check_Imap_Seq_compat
 from check_helper_functions import check_Imap_filetype
 from check_helper_functions import check_MSA_filetype
 from check_helper_functions import check_Master_control_filetype
 from check_helper_functions import check_Outfilename
 from check_helper_functions import check_Print
 from check_helper_functions import check_SandT_popsizes
-from check_helper_functions import check_Imap_Tree_compat
 from check_helper_functions import check_ValueIsFrom
-from check_helper_functions import check_File
 from check_helper_functions import check_BPP_ctl_filetype
 from check_helper_functions import check_nloci_MSA_compat
 from check_helper_functions import check_Threads_nloci_compat
-from check_helper_functions import check_SandT_Imap_MSA_compat
+
+# CONFLICT CHECKING DEPENDENCIES
+from check_conflict_functions import check_Imap_Tree_compat
+from check_conflict_functions import check_Imap_Seq_compat
+from check_conflict_functions import assert_Imap_Seq_compat
+from check_conflict_functions import check_SandT_Imap_MSA_compat
 
 ## DATA DEPENDENCIES
 from data_dicts import master_Control_feedback
 from data_dicts import BPP_Control_feedback
-from data_dicts import col_print
+from data_dicts import clprnt
 
 ## TYPE HINTS
 from custom_types import BPP_control_dict
@@ -61,7 +62,7 @@ def check_Master_Control(
         input_control_file: Master_control_file
                         ):
 
-    print(f"\n{col_print.BLUE}INITAL CHECK OF MASTER CONTROL FILE (MCF) PARAMETERS{col_print.RESETC}\n")
+    print(f"\n{clprnt.BLUE}INITAL CHECK OF MASTER CONTROL FILE (MCF) PARAMETERS{clprnt.end}\n")
     
     ## CHECK MASTER CONTROL FILE INTEGRITY
     check_Master_control_filetype(input_control_file)
@@ -75,9 +76,9 @@ def check_Master_Control(
     par_check["Imapfile"]       = check_Imap_filetype(param["Imapfile"])
     par_check["tree_start"]     = check_Newick(param["tree_start"])
     par_check["tree_HM"]        = check_Newick(param["tree_HM"])
-    par_check["ctl_file_phylo"] = check_File(param["ctl_file_phylo"])
-    par_check["ctl_file_delim"] = check_File(param["ctl_file_delim"])
-    par_check["ctl_file_HM"]    = check_File(param["ctl_file_HM"])
+    par_check["ctl_file_phylo"] = check_BPP_ctl_filetype(param["ctl_file_phylo"])
+    par_check["ctl_file_delim"] = check_BPP_ctl_filetype(param["ctl_file_delim"])
+    par_check["ctl_file_HM"]    = check_BPP_ctl_filetype(param["ctl_file_HM"])
 
     # parameters for the merge decisions
     par_check["mode"]           = check_ValueIsFrom(param["mode"], ["merge", "split"])
@@ -101,8 +102,8 @@ def check_Master_Control(
     par_names = [*param]
     values = list(param.values())
     feedback = [master_Control_feedback[key][par_check[key]] for key in par_names]
-    pretty_Table(table = [par_names, values, feedback], 
-                 colnames = ["PARAMETER", "VALUE", "FEEDBACK"])
+    pretty_Table(input_table = [par_names, values, feedback], 
+                 input_colnames = ["PARAMETER", "VALUE", "FEEDBACK"])
 
 
     ## MAKE FINAL DECISION TO PROCEED OR NOT
@@ -110,7 +111,7 @@ def check_Master_Control(
     error_n = sum(i < 0 for i in list(par_check.values()))
     
     if   error_n == 0:
-        print(f"\n\t[*] No errors found during inital check of: '{input_control_file}'")
+        print(f"\n\t[*] No errors found during inital check of {input_control_file}")
     
     elif error_n > 0:
         print(f"\n{error_n} [X] ERROR(S) FOUND IN: '{input_control_file}'. PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
@@ -132,11 +133,12 @@ crashes of BPP.
 def check_BPP_param (
         param:              BPP_control_dict, 
         sourcedict:         dict, 
-        BPP_mode:           BPP_mode
+        BPP_mode:           BPP_mode,
+        after_A11:          bool = False,   # when this parameter is on, the lack of seq and imap files is not interpreted as an error
                     ) ->    bool:
 
     mode_desc = {"A01":"starting phylogeny inference", "A11": "starting delimitation inference", "A00":"hierarchical method"}
-    print(f"{col_print.BLUE}\nCHECKING USER SUPPLIED BPP {BPP_mode} PARAMETERS USED DURING {mode_desc[BPP_mode].upper()}{col_print.RESETC}\n")
+    print(f"{clprnt.BLUE}\nCHECKING USER SUPPLIED BPP {BPP_mode} PARAMETERS USED DURING {mode_desc[BPP_mode].upper()}{clprnt.end}\n")
 
     # prepare empty checking dict, the popsizes row is ignored because that is only an internal row of the pipeline
     par_check = {key:0 for key in param if key != "popsizes"}
@@ -145,6 +147,13 @@ def check_BPP_param (
     # check file related parameters
     par_check['seqfile']        = check_MSA_filetype(param["seqfile"])
     par_check['Imapfile']       = check_Imap_filetype(param["Imapfile"])
+        # if after A11 is not true, a lack of Imap and MSA files is a fatal error
+    if after_A11 == False: 
+        if par_check["seqfile"]   == 0:
+            par_check["seqfile"]   = -5 
+        if par_check["Imapfile"]  == 0:
+            par_check["Imapfile"]  = -5
+
     par_check['outfile']        = check_Outfilename(param["outfile"])
     par_check['mcmcfile']       = check_Outfilename(param["mcmcfile"])
     par_check["usedata"]        = check_ValueIsFrom(param["usedata"], ["1"])      
@@ -176,9 +185,8 @@ def check_BPP_param (
     if par_check["nloci"] and par_check["threads"]:
         par_check["threads"] = check_Threads_nloci_compat(param["threads"], param["nloci"])
 
-
     ## PRINT RESULTS OF INITIAL MISSPECIFICATION CHECKING
-    par_names = [par_name for par_name in par_check if param[par_name] != "?"]
+    par_names = [par_name for par_name in par_check if param[par_name] != "?" or par_check[par_name] < 0]
     source = [sourcedict[par_name] for par_name in par_names]
     values = [param[par_name] for par_name in par_names]
     feedback = [BPP_Control_feedback[key][par_check[key]] for key in par_names]
@@ -190,10 +198,9 @@ def check_BPP_param (
         values.insert(insert_location, param["popsizes"])
         feedback.insert(insert_location-1, "")
     
-    pretty_Table(table = [par_names, source, values, feedback], 
-                 colnames = ["PARAMETER", "SOURCE", "VALUE", "FEEDBACK"], 
+    pretty_Table(input_table = [par_names, source, values, feedback], 
+                 input_colnames = ["PARAMETER", "SOURCE", "VALUE", "FEEDBACK"], 
                  width_limit = [2, 36])
-
 
     ## DEEP COMPATIBILITY CHECKING
         # only attempt deep compatibility checks if the required paramters are present
@@ -218,7 +225,7 @@ def check_BPP_param (
     # if erroneous parameters are found, halt execution immediately
     elif error_n > 0:
         correctly_specified = False
-        print(f"\n{error_n} [X] ERROR(S) FOUND IN USER SUPPLIED PARAMETERS! PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
+        print(f"\n{error_n} [X] ERROR(S) FOUND IN USER SUPPLIED BPP PARAMETERS! PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
     
     return correctly_specified
 
@@ -235,7 +242,7 @@ def check_A01_to_A11_compatibility  (
         A11_parameters:                     BPP_control_dict,
                                     ) ->    bool:
 
-    print(f"\n{col_print.BLUE}CHECKING IF A01 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A11 STAGE{col_print.RESETC}\n")
+    print(f"\n{clprnt.BLUE}CHECKING IF A01 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A11 STAGE{clprnt.end}\n")
     
     # this is only the case if the Imap file is identical
     if A01_parameters["Imapfile"] == A11_parameters["Imapfile"]:
@@ -266,7 +273,7 @@ def check_A11_to_A00_compatibility  (
         A00_parameters:                     BPP_control_dict
                                     ) ->    bool:
 
-    print(f"\n{col_print.BLUE}CHECKING IF A11 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A00 STAGE{col_print.RESETC}\n")
+    print(f"\n{clprnt.BLUE}CHECKING IF A11 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A00 STAGE{clprnt.end}\n")
 
     A11_msa_checked = check_MSA_filetype(A11_parameters["seqfile"])
     if A11_msa_checked < 1:

@@ -27,7 +27,7 @@ with warnings.catch_warnings():
 from data_dicts import empty_HM_parameters
 from data_dicts import default_HM_parameters
 from data_dicts import MCF_param_dict
-from data_dicts import col_print
+from data_dicts import clprnt
 
 ## TYPING HINTS
 from custom_types import file_path
@@ -155,7 +155,14 @@ def create_TargetDir(
         print(f"ERROR: Directory '{target_dir_name}' already exists.")
         exit()
 
-# sets the working directory to the source directory of the master control file, and and also only leaves the remaining path
+# get just the filename part of a full file path
+def path_leaf   (
+        path:       file_path
+                ):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
+
+# sets the working directory to the source directory of the master control file, and returns just the name of the MCF
 def set_wd  (
         mc_file: file_path
             ) -> Master_control_file:
@@ -165,12 +172,34 @@ def set_wd  (
     os.chdir(working_dir)
     print(f"\nWorking directory changed to: {working_dir}\n")
 
-    def path_leaf(path):
-        head, tail = ntpath.split(path)
-        return tail or ntpath.basename(head)
-
     return path_leaf(mc_file)
 
+# create a short master control file if the program is called from the command line with 2 arguments
+def create_auto_MC  (
+        seqfile:    Phylip_MSA_file, 
+        Imapfile:   Imap_file
+                    ) -> Master_control_file:
+
+    filename = "AutoMC.txt"
+    f = open(filename, "x")
+    f.writelines([f"seqfile = {seqfile}\n", f"Imapfile = {Imapfile}\n" ])
+
+    return filename
+
+# create a target directory and automatic control file    
+def initialize  (
+        seqfile, 
+        Imapfile,
+        target_dir_name:    file_path
+                ):   
+
+    if not os.path.exists(target_dir_name):
+        os.makedirs(target_dir_name)
+
+    os.chdir(target_dir_name)
+    print(f"\nWorking directory changed to: {target_dir_name}\n")
+
+    return create_auto_MC(seqfile, Imapfile)
 
 ## PRINT HELPER FUNCTIONS
 
@@ -429,8 +458,9 @@ def bppcfile_to_dict(
     except:
         pass
 
-    # make dataframe a dict
+    # make dataframe a dict, and transform all types to string
     bpp_cdict = df.set_index('par').T.to_dict("records")[0]
+    bpp_cdict = {str(param):str(bpp_cdict[param]) for param in bpp_cdict}
 
     # if a given parameter is present, but but has an empty value, return "?" for that parameter
     for param in bpp_cdict:
@@ -467,9 +497,9 @@ def BPP_run (
             ):
 
     try:
-        print(f"{col_print.GREEN}\nSTARTING BPP...\n")
+        print(f"{clprnt.GREEN}\nSTARTING BPP...\n")
         subprocess.run(["bpp", "--cfile", control_file])
-        print(f"{col_print.RESETC}")
+        print(f"{clprnt.end}")
     
     except:
         print("[X] ERROR: THE FILES SUPPLIED TO BPP CAUSE A CRASH")
