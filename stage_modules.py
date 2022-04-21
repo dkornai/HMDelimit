@@ -61,7 +61,7 @@ def StartingTopolgy (
 
     # set up the BPP control file specific to the A01 stage
     BPP_A01_cfile_name = "BPP_A01_Phylo_Inference.ctl"
-    BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, mode = 'A01')
+    BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, BPP_mode = 'A01')
     BPP_cdict = generate_unkown_BPP_param(BPP_cdict)
     BPP_cdict = generate_unknown_BPP_tree(BPP_cdict)
 
@@ -106,7 +106,7 @@ def StartingDelimitation(
 
     # set up the BPP control file specific to the A11 stage
     BPP_A11_cfile_name = "BPP_A11_Starting_Delimitation.ctl"
-    BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, mode = 'A11')
+    BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, BPP_mode = 'A11')
     BPP_cdict = generate_unkown_BPP_param (BPP_cdict)
         # overwrite any existing starting tree if one was generated in the A01 step or supplied in the MCF
     if starting_tree != None:
@@ -181,7 +181,7 @@ def HMIteration (
     
     # set up the control file specific to the A00 stage
     proposed_cfile_name = "proposed_topology_A00.ctl"
-    BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, mode = 'A00')
+    BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, BPP_mode = 'A00')
     BPP_cdict = generate_unkown_BPP_param(BPP_cdict) 
     BPP_cdict = proposal_compliant_BPP_param(BPP_cdict, prop_imap, prop_imap_name, prop_tree)
     

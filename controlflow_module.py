@@ -1,4 +1,4 @@
-from check_param_module import check_A01_to_A11_compatibility, check_A11_to_A00_compatibility, check_BPP_cfile
+from check_param_module import check_A01_to_A11_compatibility, check_A11_to_A00_compatibility, check_BPP_param
 from custom_types import Master_control_dict, Tree_newick
 from helper_functions import read_MasterControl
 from bpp_cfile_module import get_known_BPP_param
@@ -82,16 +82,16 @@ def controlled_check(input_mc_file, p_state):
     if   p_state == 3:
         A00_param, A00_source = get_user_BPP_param(mc_dict, "A00")
         
-        if check_BPP_cfile(A00_param, A00_source, "A00"):
+        if check_BPP_param(A00_param, A00_source, "A00"):
             compatible = True
 
     elif p_state == 2:
         A11_param, A11_source = get_user_BPP_param(mc_dict, "A11")
         A00_param, A00_source = get_user_BPP_param(mc_dict, "A00", mask_A11 = True)
         
-        if check_BPP_cfile(A11_param, A11_source, "A11"):
+        if check_BPP_param(A11_param, A11_source, "A11"):
             if check_A11_to_A00_compatibility(A11_param, A00_param):
-                if check_BPP_cfile(A00_param, A00_source, "A00"):
+                if check_BPP_param(A00_param, A00_source, "A00"):
                     compatible = True
 
     elif p_state == 1:
@@ -99,11 +99,11 @@ def controlled_check(input_mc_file, p_state):
         A11_param, A11_source = get_user_BPP_param(mc_dict, "A11")
         A00_param, A00_source = get_user_BPP_param(mc_dict, "A00", mask_A11 = True)
         
-        if check_BPP_cfile(A01_param, A01_source, "A01"):
+        if check_BPP_param(A01_param, A01_source, "A01"):
             if check_A01_to_A11_compatibility(A01_param, A11_param):
-                if check_BPP_cfile(A11_param, A11_source, "A11"):
+                if check_BPP_param(A11_param, A11_source, "A11"):
                     if check_A11_to_A00_compatibility(A11_param, A00_param):
-                        if check_BPP_cfile(A00_param, A00_source, "A00"):
+                        if check_BPP_param(A00_param, A00_source, "A00"):
                             compatible = True
 
     return compatible

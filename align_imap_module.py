@@ -45,6 +45,18 @@ from custom_types import BPP_control_dict_component
 ## SPECIALIZED HELPER FUNCTIONS
 
 # calculate the pairwise distance between two sequences at shared known characters
+'''
+This custom pairwise distance function is due to the fact that the standard identity
+based paiwise distance calculation of BioPython does not ignore gaps and unknowns, 
+and also does not work for phased diploid sequences. As such, a custom function was
+necessary to have identical results to those produced by the Minimalist BPP web app 
+of Prof. Bruce Rannala.
+
+The pairwise distances are calculated by: 
+    1) Filtering down both alignments to sites with shared non-N IUPAC codes
+    2) Using a lookup table from "data_dicts" to get the distance for each pair
+    3) Averaging the results
+'''
 def pairwise_dist   (
         seq_1:              str, 
         seq_2:              str
@@ -58,15 +70,17 @@ def pairwise_dist   (
     
     # at each site, use the lookup table to measure the distance
     dist_persite = [distance_dict[pair] for pair in alignlist]
-    
-    # get the overall average
-    avg_dist = (sum(dist_persite)/len(dist_persite))
 
-    return float(np.round(avg_dist, decimals = 4))
+    return float(np.round(np.average(dist_persite), decimals = 4))
 
 
 # return a list of all paiwise distances in an alignment
-def distanceList(
+'''
+This function finds all the unique sequence pairs in an MSA which should have
+their distances measured. It then iterates through these pairs, using 
+"pairwise_dist" to get a pairwise distance for each.
+'''
+def get_Distance_list(
         input_MSA:      MultipleSeqAlignment
                 ) ->    list[float]:
 
@@ -78,24 +92,23 @@ def distanceList(
     seq_com = sorted(list(combinations(list(range(len(seqlist))), 2)), key=lambda x: x[1])
 
     # go through the list of combinations, and measure the distance for each
-    dist_list = [0]*len(seq_com)
-    for i in range(len(seq_com)):
-        seq1 = seqlist[seq_com[i][0]]
-        seq2 = seqlist[seq_com[i][1]]
-        dist_list[i] = pairwise_dist(seq1, seq2)
+    dist_list = [pairwise_dist(seqlist[seq_com[i][0]], seqlist[seq_com[i][1]]) for i, _ in enumerate(seq_com)]
 
     return dist_list
 
 
-# produce a BioPython compatible "DistanceMatrix" by wrapping the "distanceList" function
-
-    # This distance matrix is used in "autoStartingTree" to generate trees using upgma
-
-def getDistanceMatrix   (
+# produce a BioPython compatible "DistanceMatrix" by wrapping the "get_Distance_list" function
+'''
+This function takes an MSA object, uses "get_Distance_list" to get the pairwise distances,
+and formats the output to comply with the "DistanceMatrix" class of BioPython.
+This way, the custom "pairwise_dist" function can be integrated into the established
+"DistanceTreeContstructor" pipeline.
+'''
+def get_DistanceMatrix  (
         input_MSA:              MultipleSeqAlignment
                         ) ->    DistanceMatrix:
 
-    dist_list = distanceList(input_MSA)
+    dist_list = get_Distance_list(input_MSA)
     name_list = [str(seq.id) for seq in input_MSA]
 
     # format matrix to comply with BioPython by adding 0s, and getting values in the correct order
@@ -110,11 +123,12 @@ def getDistanceMatrix   (
 
 
 # return a dict containing the maximum number of sequences at any loci for each population
-
-    # This function is used in "autoPopParam" to generate the descriptive lines for the BPP
-    # control file. The function is also used in "check_GuideTree_Imap_compat" to ensure
-    # that GDI values can be calculated. 
-
+'''
+This function counts the maximum number of sequences at a single loci that are associated with a 
+population in the sequence alignment. This output is used in "autoPopParam" to automatically 
+generate the "species&tree" lines for the BPP control file. The function is also used in 
+"check_GuideTree_Imap_compat" to ensure that each population has at least two sequences associated with it.
+'''
 def count_Seq_Per_Pop   (
         input_popind_dict, 
         input_MSA_list:         list[MultipleSeqAlignment]
@@ -138,13 +152,15 @@ def count_Seq_Per_Pop   (
     return maxcounts
 
 
-## SPECIALIZED FUNCTIONS
+## MAIN FUNCTIONS
 
 # generate the lines of the control file corresponding to population numbers and sizes
-
-    # This function reads the alignment and the IMAP, and extracts the population labels, 
-    # and the number of sequences associated with that population in the alignment.
-
+'''
+This function reads the alignment and the IMAP. It then extracts the population labels, 
+and uses "count_Seq_Per_Pop to count the number of  sequences associated with that population 
+in the alignment. This data is then formatted to comply with the "species&tree" row of 
+the BPP control file.
+'''
 def autoPopParam(
         imap, 
         alignmentfile:  Phylip_MSA_file, 
@@ -172,12 +188,20 @@ def autoPopParam(
 
     return rows
 
-# automatically generates priors (using the method of Prof. Bruce Rannala)
+# automatically generates the tau and theta prior lines of the BPP control file
+"""
+This function generates tau and theta priors using the method implemented in Minimalist BPP by Prof. Bruce Rannala. 
+Both tau and theta priors are inverse gammas with a wide alpha parameter (3) the function calculates a suitable
+mean for these inverse gamme distributions by examining the distances in the alignment.
 
-    # Theta is calculated to give a mean which is the average of within population average pairwise distances
-    # tau is calculated to give a mean that is the largest pairwise distance seen in the alignment. 
-    # The output of this function is used in BPP control files
- 
+Theta is calculated to give a mean which is the average of within population average pairwise distances. This
+value is expected to be a good estimate of the average effective population size. 
+
+Tau is calculated to give a mean that is the largest pairwise distance seen in the alignment. This is because
+this value is expected to be quite similar to the distance observed at the deepest node of the tree. 
+
+The final values are formatted to comply with the "tauprior" and "thetaprior" lines of the BPP control file
+"""
 def autoPrior   (
         imapfile:       Imap_file, 
         alignmentfile:  Phylip_MSA_file
@@ -211,7 +235,7 @@ def autoPrior   (
             if len(temp_aligment) >= 2:
                 
                 # get avergage distance within the temp alignment
-                dist_list = distanceList(temp_aligment)
+                dist_list = get_Distance_list(temp_aligment)
                 avg_dist = np.average(dist_list)
 
                 # append to final list
@@ -232,7 +256,7 @@ def autoPrior   (
     # calculation of the maximum pairwise distance at each locus
     max_dist = []
     for locus in alignment:
-        dist_list = distanceList(locus)
+        dist_list = get_Distance_list(locus)
         maxval = np.max(dist_list)
         max_dist.append(maxval)
 
@@ -248,11 +272,20 @@ def autoPrior   (
 
 
 # generate a starting tree using distance methods
+'''
+This function is capable of generating a phylogenetic tree for the populations using basic
+distance + upgma methods. The function works by:
+    1) Scanning all loci, and choosing only those were all populations are present
+    2) For each loci, randomly choosing one sequence from each population
+    3) Building a tree using distnace + upgma for that loci
+    4) Using a majority consensus approach to get a final tree representin the entire dataset
+    5) Formatting the tree to the newick format
 
-    # This function is only called if the program needs to run BPP A01 to generate a starting tree.
-    # The tree output is not very correct, but offers a better starting point that a random tree.
-    # This way, less computational resources are wasted during A01.
-
+This function is only called if the program has found no guide trees in the MCF, or the 
+individual BPP control files. In this case, the program needs to run BPP A01 to generate a starting tree.
+The tree output from this function is not very correct, but offers a better starting point than a random tree.
+This way, less computational resources are wasted during A01.
+'''
 def autoStartingTree(
         imapfile:           Imap_file, 
         alignmentfile:      Phylip_MSA_file
@@ -299,7 +332,7 @@ def autoStartingTree(
                 temp_align.extend([row_obj])
 
         # infer tree using custom distance methods
-        dm = getDistanceMatrix(temp_align)
+        dm = get_DistanceMatrix(temp_align)
         constructor = DistanceTreeConstructor()
         tree = constructor.upgma(dm)
         tree_list.append(tree)

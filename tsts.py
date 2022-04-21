@@ -126,28 +126,6 @@
 # print(check_Alignment("D_HL_align.txt"))
 # print(check_Alignment("D_TMS_align.txt"))
 
-# # checking of the autoprior module
-# from align_imap_module import autoPrior
-# print("HL")
-# print(autoPrior("D_HL_imap.txt", "D_HL_align.txt"))
-# print("TMS")
-# print(autoPrior("D_TMS_imap.txt", "D_TMS_align.txt"))
-# print("ROT")
-# print(autoPrior("D_ROT_imap.txt", "D_ROT_align.txt"))
-# print("L10")
-# print(autoPrior("D_L10_imap.txt", "D_L10_align.txt"))
-
-# # checking of the starting tree module
-# from align_imap_module import autoStartingTree
-# print("HL")
-# print(autoStartingTree("D_HL_imap.txt", "D_HL_align.txt"))
-# print("TMS")
-# print(autoStartingTree("D_TMS_imap.txt", "D_TMS_align.txt"))
-# print("ROT")
-# print(autoStartingTree("D_ROT_imap.txt", "D_ROT_align.txt"))
-# print("L10")
-# print(autoStartingTree("D_L10_imap.txt", "D_L10_align.txt"))
-
 # # checking of the Imap-MSA and Imap-Tree compatibility checkers
 # from align_imap_module import check_Imap_Tree_compat
 # from align_imap_module import check_Imap_Seq_compat
@@ -165,3 +143,38 @@
 # tree, pops = StartingDelimitation("Pcontrol.txt")
 # print(tree)
 # print(pops)
+
+
+# ## TESTS FOR "ALIGN_IMAP_MODULE"
+# '''
+# All helper functions are tested implicity by calling the three big functions.
+# '''
+# from align_imap_module import autoPopParam
+# print("HL")
+# print(autoPopParam("Test_Data/D_HL_imap.txt", "Test_Data/D_HL_align.txt"))
+# print("TMS")
+# print(autoPopParam("Test_Data/D_TMS_imap.txt", "Test_Data/D_TMS_align.txt"))
+# print("ROT")
+# print(autoPopParam("Test_Data/D_ROT_imap.txt", "Test_Data/D_ROT_align.txt"))
+# print("L10")
+# print(autoPopParam("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
+
+# from align_imap_module import autoPrior
+# print("HL")
+# print(autoPrior("Test_Data/D_HL_imap.txt", "Test_Data/D_HL_align.txt"))
+# print("TMS")
+# print(autoPrior("Test_Data/D_TMS_imap.txt", "Test_Data/D_TMS_align.txt"))
+# print("ROT")
+# print(autoPrior("Test_Data/D_ROT_imap.txt", "Test_Data/D_ROT_align.txt"))
+# print("L10")
+# print(autoPrior("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
+
+# from align_imap_module import autoStartingTree
+# print("HL")
+# print(autoStartingTree("Test_Data/D_HL_imap.txt", "Test_Data/D_HL_align.txt"))
+# print("TMS")
+# print(autoStartingTree("Test_Data/D_TMS_imap.txt", "Test_Data/D_TMS_align.txt"))
+# print("ROT")
+# print(autoStartingTree("Test_Data/D_ROT_imap.txt", "Test_Data/D_ROT_align.txt"))
+# print("L10")
+# print(autoStartingTree("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))

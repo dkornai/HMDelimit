@@ -10,8 +10,8 @@ class col_print:
 # the pairs of MCF parameter names:keyphrases that are searched in the control file to read them
 MCF_param_dict =    {
 # parameters for the pipeline
-"file_align"    :"alignment file",
-"file_imap"     :"Imap file", 
+"seqfile"       :"seqfile",
+"Imapfile"      :"Imapfile", 
 "tree_start"    :"starting tree",
 "tree_HM"       :"HM guide tree",  
 "ctl_file_phylo":"BPP A01 starting phylogeny inference",
@@ -40,12 +40,12 @@ MCF_param_dict =    {
 # contains the written feedback for the checker of the master control file
 master_Control_feedback =   {
 # parameters for the pipeline
-"file_align":      {-2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID MSA\n\n\t Please give the name of a correctly phylip formatted MSA file.\n",
+"seqfile":         {-2:"[X] ERROR: THE SPECIFIED SEQFILE IS NOT A VALID MSA\n\n\t Please give the name of a correctly phylip formatted MSA file.\n",
                     -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) alignment file not specified",
                     1 :"[*] alignment file found",
                     },
-"file_imap":       {-2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID IMAP\n\n\t Please give the name of a correctly formatted imap file.\n",
+"Imapfile":        {-2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID IMAP\n\n\t Please give the name of a correctly formatted imap file.\n",
                     -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) Imap file not specified",
                     1 :"[*] Imap file found",
@@ -60,21 +60,15 @@ master_Control_feedback =   {
                     0 :"(~) HM guide tree not specified",
                     1 :"[*] HM guide tree correctly specified",
                     },
-"ctl_file_phylo":  {-3:"[X] ERROR: THE BPP CONTROL FILE CONTAINS CALLS TO UNKOWN PARAMETERS\n\n\t Please consults the BPP Manual for the list of parameteteres\n",
-                    -2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID BPP CONTROL FILE\n\n\t Please give the name of a correctly formatted BPP control file, or leave empty\n",
-                    -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
+"ctl_file_phylo":  {-1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) BPP A01 Starting phylogeny inference control file not specified",
                     1 :"[*] BPP A01 Starting phylogeny inference control file successfully found",
                     },
-"ctl_file_delim":  {-3:"[X] ERROR: THE BPP CONTROL FILE CONTAINS CALLS TO UNKOWN PARAMETERS\n\n\t Please consults the BPP Manual for the list of parameteteres\n",
-                    -2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID BPP CONTROL FILE\n\n\t Please give the name of a correctly formatted BPP control file, or leave empty\n",
-                    -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
+"ctl_file_delim":  {-1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) BPP A01 Starting delimitation control file not specified",
                     1 :"[*] BPP A11 Starting delimitation control file successfully found",
                     },   
-"ctl_file_HM":     {-3:"[X] ERROR: THE BPP CONTROL FILE CONTAINS CALLS TO UNKOWN PARAMETERS\n\n\t Please consults the BPP Manual for the list of parameteteres\n",
-                    -2:"[X] ERROR: THE SPECIFIED FILE IS NOT A VALID BPP CONTROL FILE\n\n\t Please give the name of a correctly formatted BPP control file, or leave empty\n",
-                    -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
+"ctl_file_HM":     {-1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
                     0 :"(~) BPP A00 HM Parameter Inference control file not specified",
                     1 :"[*] BPP A00 HM Parameter Inference control file successfully found",
                     }, 
@@ -343,7 +337,7 @@ empty_BPP_cfile_dict =  {
                         }
 
 # contains default values shared by all modes of BPP
-default_BPP_cfile_dict =    {
+default_BPP_param =    {
 'seed':                 '?',
 'seqfile':              '?', 
 'Imapfile':             '?', 
@@ -368,7 +362,7 @@ default_BPP_cfile_dict =    {
 'threads':              '1 ',
     }
 # contains default values for parameters of the BPP A01 control file
-default_BPP_A01_cfile_dict =    {
+default_BPP_A01_param =    {
 'outfile':              'starting_tree_out.txt', 
 'mcmcfile':             'starting_tree_mcmc.txt',
 'speciesdelimitation':  '0',
@@ -377,7 +371,7 @@ default_BPP_A01_cfile_dict =    {
                                 }
 
 # contains default values for parameters of the A11 BPP control file
-default_BPP_A11_cfile_dict =    {
+default_BPP_A11_param =    {
 'outfile':              'starting_delimitation_out.txt', 
 'mcmcfile':             'starting_delimitation_mcmc.txt',
 'speciesdelimitation':  '1 1 2 0.5',
@@ -386,13 +380,20 @@ default_BPP_A11_cfile_dict =    {
                                 }
 
 # contains default values for parameters of the A00 BPP control file
-default_BPP_A00_cfile_dict =    {
+default_BPP_A00_param =    {
 'outfile':              'proposal_out.txt', 
 'mcmcfile':             'proposal_mcmc.txt',
 'speciesdelimitation':  '0',
 'speciestree' :         '0',
 'usedata':              '1', 
                                 }
+
+# final wrapper dict that enables mode flag based access to defaults
+default_BPP_modespecific_param =    {
+"A01":  default_BPP_A01_param,
+"A11":  default_BPP_A11_param,
+"A00":  default_BPP_A00_param,
+                                    }  
 
 # available characters:
 avail_chars = set(["T", "C", "G", "A", "R", "Y", "W", "S", "M", "K", "H", "B", "D", "V"])

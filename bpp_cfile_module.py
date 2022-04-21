@@ -1,11 +1,15 @@
+'''
+THIS MODULE CONTAINS FUNCTIONS USED FOR COLLECTING THE PARAMETERS OF
+BPP CONTROL FILES FROM THE MASTER CONTROL FILE, BPP CONTROL FILES,
+DEFAULT VALUES, AND AUTOMATICALLY GENERATED VALUES
+'''
 ## DEPENDENCDIES
 
-# PYTHON STANDARD DEPENDENCIES
+# STANDARD LIBRARY DEPENDENCIES
 import copy
 import random
 
 # HELPER FUNCTION DEPENDENCIES
-from helper_functions import dict_source
 from helper_functions import overwrite_dict
 from helper_functions import bppcfile_to_dict
 
@@ -16,12 +20,10 @@ from align_imap_module import autoStartingTree
 
 # DATA DEPENDENCIES
 from data_dicts import empty_BPP_cfile_dict
-from data_dicts import default_BPP_cfile_dict
-from data_dicts import default_BPP_A00_cfile_dict
-from data_dicts import default_BPP_A01_cfile_dict
-from data_dicts import default_BPP_A11_cfile_dict
+from data_dicts import default_BPP_param
+from data_dicts import default_BPP_modespecific_param
 
-# TYPE HINTING DEPENDENCIES
+## TYPE HINTS
 from custom_types import BPP_mode
 from custom_types import BPP_control_dict
 from custom_types import Imap_list
@@ -37,7 +39,7 @@ This function is extremely important for the functionality of the pipeline.
 This is because it is responsible for collecting all of the BPP control file 
 parameters which are required to successfully start a BPP instance. 
 
-Each of the 20 BPP parameters that the pipeline requires are collected from one of 
+Each of the ~20 BPP parameters that the pipeline requires are collected from one of 
 the 4 sources below, which are listed in their order of importance, 
 from least to most important. Higher importance sources will overwrite 
 parameters collected from lower importance sources. 
@@ -53,7 +55,7 @@ parameters collected from lower importance sources.
   Together, these default values ensure that the user needs to specify the minimal
   number of parameters in the MCF
 
-2) BPP mode agnostic  parameters included in the MCF
+2) BPP mode agnostic parameters included in the MCF
     These include "seed", "thetaprior", "tauprior" and also the location of imap
     and alignment files, and even starting trees.
 
@@ -64,114 +66,105 @@ parameters collected from lower importance sources.
 3) BPP mode specific parameters found in BPP control files that are specified
 at the "ctl_file_phylo","ctl_file_delim","ctl_file_HM" parameters of the MCF.
 
-    This enables users to take complete control over each stage of the process,
-    and present different parameters to each mode of BPP. For example, this could
-    be useful if the user wants to use more samples in the A00 stage than during A01
+  This enables users to take complete control over each stage of the process,
+  and present different parameters to each mode of BPP. For example, this could
+  be useful if the user wants to use more samples in the A00 stage than during A01
+
+4) The starting tree, or guide tree from the master control file, if they are present.
+    When finding paramters for the A11 mode, a non "?" value for the "tree_start" 
+    parameter of the master control file will overwrite any tree in the dedicated A11 control file.
+    When finding paramters for the A00 mode, a non "?" value for the "tree_HM" 
+    parameter of the master control file will overwrite any tree in the dedicated A00 control file.
+
+  This final behaviour enables the user to supply phylogenetic information to the pipeline
+  without having to make dedicated BPP control files. This makes the pipeline significantly
+  more user friendly
 '''
 def get_known_BPP_param (
         input_mc_dict:          Master_control_dict, 
-        mode:                   BPP_mode
+        BPP_mode:               BPP_mode
                         ) ->    BPP_control_dict: 
-    
-    # start by combining the empty and default generic BPP control dicts
-    BPP_cdict = overwrite_dict(empty_BPP_cfile_dict, default_BPP_cfile_dict)
 
-    # get defaults specific to the provided mode
-    if mode   == "A00":
-        BPP_cdict = overwrite_dict(BPP_cdict, default_BPP_A00_cfile_dict)
-    elif mode == "A01":
-        BPP_cdict = overwrite_dict(BPP_cdict, default_BPP_A01_cfile_dict)
-    elif mode == "A11":
-        BPP_cdict = overwrite_dict(BPP_cdict, default_BPP_A11_cfile_dict)
+    # 0), 1) start by combining the default generic parameters with the default mode specific ones.
+    BPP_cdict = overwrite_dict(default_BPP_param, default_BPP_modespecific_param[BPP_mode])
 
-    # find any generic BPP parameters available in the master control dict
+    # 2) find any BPP parameters available in the master control dict
     BPP_cdict = overwrite_dict(BPP_cdict, input_mc_dict)
-    file_locations = {"seqfile" :input_mc_dict["file_align"],
-                      "Imapfile":input_mc_dict["file_imap"]}
-    BPP_cdict = overwrite_dict(BPP_cdict, file_locations)
 
-    # if the master control dict points to a BPP control file, extract the available parameters
-    if mode == "A01":
-        stage = 'ctl_file_phylo'
-    elif mode == "A11":
-        stage = 'ctl_file_delim'
-    elif mode   == "A00":
-        stage = 'ctl_file_HM'
-
-    try: 
-        bpp_dict  = bppcfile_to_dict(input_mc_dict[stage])
-        BPP_cdict = overwrite_dict(BPP_cdict, bpp_dict)
-    except:
-        pass
     
-    # final overwrite with MCF trees if available
-    if mode == "A11":
+    # 3) if the master control dict specifies a custom control file for the appropriate stage
+    stage_code = {"A01":'ctl_file_phylo', "A11":'ctl_file_delim',"A00":'ctl_file_HM'}
+    if input_mc_dict[stage_code[BPP_mode]] != "?":
+       # extract the available parameters then overwrite with those parameters
+        user_BPP_cfile = bppcfile_to_dict(input_mc_dict[stage_code[BPP_mode]])
+        BPP_cdict = overwrite_dict(BPP_cdict, user_BPP_cfile)
+    
+    # 4) final overwrite with MCF trees if available
+    if   BPP_mode == "A11":
         if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
              BPP_cdict["newick"] = input_mc_dict["tree_start"]
-    elif mode   == "A00":
+    elif BPP_mode == "A00":
         if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
              BPP_cdict["newick"] = input_mc_dict["tree_HM"]
 
     return BPP_cdict
 
 
+
 # get the BPP paramters that are set by the user in any form
 '''
-This function only collects BPP paramters from the MCF, or from the stage specific BPP control file of the MCF.
+This function works similarly to "get_known_BPP_param", but only collects user supplied 
+values, and ignores default ones. The user can provide values through the master control file,
+or stage specific custom BPP control files. The collection of user specified parameters only
+is useful in the pre-pipeline checking stage. Here, the user specified inputs need to be checked
+to ensure correct formatting, and compatibility between the stages of the pipeline. As default 
+values, and automatically generated values to the BPP control file are guaranteed to be correct,
+it is unnecessary to check any of them. 
+
 The function also returns a source dict which tells the origin of the paramter (MCF or BPP cfile).
 This is useful when checking compatibilities and misspecifications in the BPP command file,
-as the user can be pointed to the source of the incompatible or badly specified parameter
+as the user can be pointed to the source of the incompatible or badly specified parameter.
+
+The "mask_A11" option is used when checking the user supplied parameters of the A00 stage,
+when an A11 stage is also used before. In this case, the output from the A11 will always be
+formatted by the pipeline to be compatible with the next A00 stage, so the checking of
+those parameters becomes unnecessary. However, when runnin only the A00 stage, it is
+necessary to check them.
 '''
 ### FIX SOURCE IS INCORRECT !!
 def get_user_BPP_param  (
         input_mc_dict:          Master_control_dict, 
-        mode:                   BPP_mode,
+        BPP_mode:               BPP_mode,
         mask_A11:               bool = False # optional ability to mask any parameters that would be inherited from the A11 stage  
                         ) ->    tuple[BPP_control_dict, dict]:    
     
-    # find any BPP parameters available in the master control dict
+    # 0A) find any BPP parameters available in the master control dict
     BPP_cdict = overwrite_dict(empty_BPP_cfile_dict, input_mc_dict)
-    file_locations = {"seqfile" :input_mc_dict["file_align"],
-                      "Imapfile":input_mc_dict["file_imap"]}
-    BPP_cdict = overwrite_dict(BPP_cdict, file_locations)
+    # 0B) keep track of the origin of newly found parameters
+    sourcedict = {param:"MCF" for param in BPP_cdict if (BPP_cdict[param] != empty_BPP_cfile_dict[param])} 
 
-    # keep track of the origin of parameters
-    sourcedict = dict_source(empty_BPP_cfile_dict, BPP_cdict, "MCF")
-
-    # if the master control dict points to a BPP control file, extract the available parameters
-    if mode == "A01":
-        stage = 'ctl_file_phylo'
-    elif mode == "A11":
-        stage = 'ctl_file_delim'
+    # 1A) if the master control dict points to a BPP control file...
+    stage_code = {"A01":'ctl_file_phylo', "A11":'ctl_file_delim',"A00":'ctl_file_HM'}
+    if input_mc_dict[stage_code[BPP_mode]] != "?":
+        # extract the available parameters then overwrite with those parameters
+        user_BPP_cfile = bppcfile_to_dict(input_mc_dict[stage_code[BPP_mode]])
+        BPP_cdict = overwrite_dict(BPP_cdict, user_BPP_cfile)
+        # 1B) update the source dict
+        for param in BPP_cdict:
+            if param in user_BPP_cfile and user_BPP_cfile[param] != "?":
+                sourcedict[param] = f"BPP {BPP_mode} Cfile"
+        
+    # 2AB) final overwrite with MCF trees if available
+    if   BPP_mode == "A11":
         if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
-             BPP_cdict["newick"] = input_mc_dict["tree_start"]
-    elif mode   == "A00":
-        stage = 'ctl_file_HM'
-        if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
-             BPP_cdict["newick"] = input_mc_dict["tree_HM"]
-    
-    try: 
-        bpp_dict  = bppcfile_to_dict(input_mc_dict[stage])
-        BPP_cdict = overwrite_dict(BPP_cdict, bpp_dict)
-            # keep track of the origin of parameters
-        sourcedict = dict_source(empty_BPP_cfile_dict, BPP_cdict, "BPP Cfile", sourcedict)
-    except:
-        pass
-
-    # final overwrite with MCF trees if available
-    tree_dict = {}
-    if mode == "A11":
-        if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
-            tree_dict = {"newick":input_mc_dict["tree_start"]}
+            BPP_cdict["newick"] = input_mc_dict["tree_start"]
             sourcedict["newick"] = "MCF"
-            BPP_cdict = overwrite_dict(BPP_cdict, tree_dict)
-    elif mode   == "A00":
+    elif BPP_mode == "A00":
         if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
-            tree_dict = {"newick":input_mc_dict["tree_HM"]}
+            BPP_cdict["newick"] = input_mc_dict["tree_HM"]
             sourcedict["newick"] = "MCF"
-            BPP_cdict = overwrite_dict(BPP_cdict, tree_dict)
 
-    # if the option to mask the parameters that A00 inherits after running A11 is on, make the following parameters unknown
+    # 3) if the option to mask the parameters that A00 inherits after running A11 is on, make the following parameters unknown
         # When A00 is run after A11, These parameters depend on the results of A11, which are unpredictable in advance.  
     if mask_A11 == True:
         BPP_cdict["Imapfile"] = "?"
@@ -182,18 +175,19 @@ def get_user_BPP_param  (
     return BPP_cdict, sourcedict
 
 
+
 # generate parameters with no available defaults or user supplied values
 '''
 This function is core to the pipeline. It is able to generate missing parameter values
 that are data specific, and thus impossible to provide default values for.
 
 It can generate missing:
-   -seeds using a randomly generated value
-   -population structure data by reading the alignment and the imap
-   -priors by implementing the method of Prof. Bruce Rannala
+   -'seed' using a randomly generated value
+   -'species&tree' and 'nloci' lines using the actual paramters observed in the data
+   -'tauprior' and 'thetaprior' by implementing the method of Prof. Bruce Rannala
 
-By generating these values, this function enables People unfamiliar 
-with BPP and/or Bayesian phylogenetics can use the pipeline.
+By generating these values, this function enables the master control file, or the 
+specialized BPP control files to be the absolute minimum length
 '''
 def generate_unkown_BPP_param   (
         input_control_dict:             BPP_control_dict
@@ -234,6 +228,7 @@ def generate_unkown_BPP_param   (
     return BPP_cdict
 
 
+
 # generate the starting tree in the BPP A01 control file, if it is missing
 '''
 This function is only used at the very begenning of a BPP A01 analysis if no tree is
@@ -250,6 +245,7 @@ def generate_unknown_BPP_tree   (
                                                imapfile      = BPP_cdict['Imapfile'])
 
     return BPP_cdict
+
 
 
 # generate the parameters of the BPP A00 control file that change according to a new proposal

@@ -139,28 +139,6 @@ def overwrite_dict  (
     
     return dict_out 
 
-# track the changes that occur when two dicts are merged, and return if a given parameter is from dict1 or dict2
-def dict_source (
-        dict_1:             dict, 
-        dict_2:             dict, 
-        dict_2_name:        str, 
-        prev_sourcedict:    dict = None
-                ) ->        dict:
-
-    if prev_sourcedict == None:
-        sourcedict = {}
-    else:
-        sourcedict = copy.deepcopy(prev_sourcedict)
-    
-    for key in dict_2:
-        if dict_2[key] != dict_1[key]:
-            sourcedict[key] = dict_2_name
-        else:
-            if prev_sourcedict == None:
-                sourcedict[key] = ""
-                
-    return sourcedict
-
 
 ## GENERAL FILE AND FOLDER I-O
 
