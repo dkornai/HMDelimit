@@ -127,11 +127,11 @@ def move_to_mc_folder   (
     filepath = mc_name["mcf"]
 
     try:
-        print("INITIALIZING PIPELINE WITH USER SUPPLIED MASTER CONTROL FILE!")
+        print("INITIALIZING PIPELINE WITH USER SUPPLIED MASTER CONTROL FILE")
         filepath = Path(filepath)
         my_abs_path = filepath.resolve(strict=True)
         
-        
+        # move the program to working directory
         working_dir = os.path.dirname(my_abs_path)
         os.chdir(working_dir)
         print(f"\nPipeline working directory is: {working_dir}\n")
@@ -151,7 +151,7 @@ def create_auto_MC  (
 
     filename = "AutoMasterControl.txt"
 
-    print(f"\nAUTOMATICALLY GENERATING MASTER CONTROL FILE '{filename}' BASED ON USER INPUT!\n")
+    print(f"\nAUTOMATICALLY GENERATING MASTER CONTROL FILE '{filename}' BASED ON USER INPUT\n")
 
     # check that such a file exists already, and fail the pipeline if so
     file_exists = check_File_exists(filename)

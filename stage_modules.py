@@ -4,9 +4,10 @@ import os
 import shutil
 
 # HELPER FUNCTIONS
-from helper_functions import Imap_to_IndPop_Dict, write_Tree
+from helper_functions import Imap_to_IndPop_Dict, Imap_to_List
 from helper_functions import Imap_to_PopInd_Dict
 from helper_functions import create_TargetDir
+from helper_functions import write_Tree
 from helper_functions import pretty
 from helper_functions import get_HM_parameters
 from helper_functions import dict_to_bppcfile
@@ -66,7 +67,7 @@ def StartingTopolgy (
     BPP_cdict = generate_unkown_BPP_param(BPP_cdict)
     BPP_cdict = generate_unknown_BPP_tree(BPP_cdict)
     # print feedback to the user
-    print("BPP CONTROL FILE:")
+    print("\nBPP CONTROL FILE:")
     pretty(BPP_cdict)
 
     # write the relevant files to the target directory
@@ -119,7 +120,7 @@ def StartingDelimitation(
     if starting_tree != None:
         BPP_cdict["newick"] = starting_tree
     # print feedback to the user
-    print("BPP CONTROL FILE:")
+    print("\nBPP CONTROL FILE:")
     pretty(BPP_cdict)
 
     # unique ID encoding
@@ -197,7 +198,7 @@ def HMIteration (
     BPP_cdict = generate_unkown_BPP_param(BPP_cdict) 
     BPP_cdict = proposal_compliant_BPP_param(BPP_cdict, prop_imap, prop_imap_name, prop_tree)
     # print feedback to the user
-    print("BPP CONTROL FILE:")
+    print("\nBPP CONTROL FILE:")
     pretty(BPP_cdict)
     
     # write the relevant files
@@ -258,7 +259,8 @@ def HierarchicalMethod  (
         guide_tree = input_guide_tree  
     # collect the imap from the user or the previous stage
     if input_imap == None:
-        indpop_dict = Imap_to_IndPop_Dict(get_known_BPP_param(mc_dict, "A00")["Imapfile"])
+        input_imap = Imap_to_List(get_known_BPP_param(mc_dict, "A00")["Imapfile"])
+        indpop_dict = Imap_to_IndPop_Dict(input_imap)
     else:
         indpop_dict = Imap_to_IndPop_Dict(input_imap)
     
@@ -282,7 +284,7 @@ def HierarchicalMethod  (
     print()
     print(f"GUIDE TREE:\n\n{guide_tree}")
     print(f"\nSTARTING IMAP:\n")
-    pretty(indpop_dict)
+    pretty(Imap_to_PopInd_Dict(input_imap))
 
 
     #-----------------------------#
