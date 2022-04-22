@@ -15,8 +15,8 @@ In this case, the pipeline will:
 
 The output of the pipeline will be:
 
--A newick tree corresponding to the delimited species
--An Imap file which maps individuals to the delimited species 
+- A newick tree corresponding to the delimited species
+- An Imap file which maps individuals to the delimited species 
 
 ### Control of parameters through the command line
 Certain parameters of the pipeline can be set directly from the command line. For example, the number of threads used in the BPP calculations can be increased:
