@@ -1,7 +1,7 @@
 '''
 THIS MODULE CONTAINS AN EXTENSIVE ARRAY OF FUNCTIONS THAT AIM
 TO CHECK FOR MISSPECIFICATIONS OF PARAMETERS, EITHER IN THE 
-MASTER CONTROL FILE, OR BPP CONTROL FILES
+MASTER CONTROL FILE, OR BPP CONTROL FILES.
 '''
 ## DEPENDENCDIES
 # STANDAR LIBRARY DEPENDENCIES
@@ -9,6 +9,8 @@ import os
 import copy
 import warnings
 import re
+from pathlib import Path
+from custom_types import Master_control_file
 
 # EXTERNAL LIBRARY DEPENDENCIES
 with warnings.catch_warnings():
@@ -35,16 +37,18 @@ from data_dicts import default_BPP_param
 These functions check if the user has specified a parameter
 with the wrong type of value, or a nonsensical value
 '''
-# check if a supplied filename actually points to an existing destination
-def check_File(filepath):
-    file_state = -1
-    if filepath == "?":
+# check if a supplied filename actually points to an existing file in the current directory
+def check_File_exists(path):
+    if path == "?":
             file_state = 0
     else:
         try:
-            file_exists = os.path.exists(filepath)
-            if file_exists == True:
+            filepath = Path(path)
+            my_abs_path = filepath.resolve(strict=True)
+            if Path(my_abs_path).is_file():
                 file_state = 1
+            else:
+                file_state = -1
         except:
             file_state = -1
 
@@ -103,168 +107,6 @@ def check_ValueIsFrom(input_value, valid_list):
             value_state = -1
 
     return value_state
-
-## CHECK THE TYPE AND INTEGRITY OF SPECIFIC SUPPLIED FILES
-# check that the Master Control file is valid, and only contains valid parameters
-'''
-This function aims to ensure that the master control file only contains calls
-to valid parameters of the pipeline. In other cases, the pipeline may fail in
-unexpected ways, which should be avoided as much as possible.
-'''
-def check_Master_control_filetype(input_mc_file):
-    ## CHECK IF A FILE IS SUPPLIED, OR EXISTS IN THE FIRST PLACE
-    mcf_status = check_File(input_mc_file)
-    if mcf_status == 0:
-        print("ERROR: NO MASTER CONTROL FILE SPECIFIED!")
-        print("\t\t\n-- EXITING PROGRAM --")
-        exit()
-    elif mcf_status == -1:
-        print(f"ERROR: NO FILE OF ANY TYPE AT THE REQUESTED LOCATION: {input_mc_file})")
-        print("\t\t\n-- EXITING PROGRAM --")
-        exit()
-    
-    ## CHECK IF ALL LINES OF THE MASTER CONTROL FILE CORRESPOND TO CORRECTLY NAMED KNOWN PARAMETERS
-    elif mcf_status:
-        # load file, and read into numbered rows
-        lines = readLines(input_mc_file)
-        lines_num = {i:line for i, line in enumerate(lines)}
-            # strip comments, and empty lines
-        lines_num = {key:lines_num[key].split("#")[0] for key in lines_num}
-        lines_num = {key:lines_num[key].split("*")[0] for key in lines_num}
-        lines_num = {key:lines_num[key] for key in lines_num if re.search("\S+", lines_num[key])}
-
-        matched_lines = {}
-        unmatched_lines = copy.deepcopy(lines_num)
-        used_params = []
-        # check if the remaining lines contain all valid parameter names, and valid parameters are mentioned only once
-        for lineindex in lines_num:
-            line = lines_num[lineindex]
-            for param in MCF_param_dict:
-                if param not in used_params:
-                    param_keyphrase = MCF_param_dict[param] # get the keyphrase from the param dict
-                    if param_keyphrase in line:
-                        matched_lines[lineindex] = line
-                        del unmatched_lines[lineindex]
-                        used_params.append(param)
-                        break
-
-        
-        # if all lines were used to specify valid MCF paramters, the program can continue
-        if set(matched_lines) == set(lines_num):
-            print()
-        
-        # if no matching parameters were found, the file is not a master control file
-        elif len(matched_lines) == 0:
-            print(f"[X] ERROR: THE FILE '{input_mc_file}' CONTAINS NO MASTER CONTROL PARAMETERS")
-            exit()
-        
-        # if some of the lines are not valid parameters, the file cannot be correctly interpreted
-        else:
-            # print the lines that were incorrectly found
-            print(f"[X] ERROR: THE MASTER CONTROL FILE '{input_mc_file}' CONTAINS UNRECOGNIZED OR DUPLICATE PARAMETERS")
-            print("\tTHE FOLLOWING LINES ARE UNRECOGNIZED OR DUPLICATES:\n")
-            for nomatch in unmatched_lines:
-                print(f"\tLine {nomatch+1}: {unmatched_lines[nomatch]}")
-            exit()
-
-
-# check if file is a valid BPP control file
-def check_BPP_ctl_filetype(bpp_ctl_file):
-    cfile_state = check_File(bpp_ctl_file)
-    if cfile_state:
-        try:
-            bpp_cdict = bppcfile_to_dict(bpp_ctl_file)
-            cfile_state = 1
-        except:
-            cfile_state = -2 # the file was not able to be interpreted as a BPP command file
-    
-    return cfile_state
-
-
-# check that the BPP control file only contains parameters that are valid for BPP
-'''
-This function aims to check, in advance, if the user supplied BPP control files are valid.
-The function checks to see if all parameters of the control file are in the known valid list,
-and will fail the check if not. Additionally, the module also warns the user if they
-supply a parameter that is ignored by the pipeline. This is needed, because in order to ensure
-no crashes, the pipeline only interprets a limited list of ~20 parameters, for which it
-performs specific checks.
-'''
-def check_BPP_ctl_validity(bpp_ctl_file):
-    bpp_cdict = bppcfile_to_dict(bpp_ctl_file)
-
-    matched_lines = {}
-    ignored_lines = {}
-    unmatched_lines = {}
-    # check if the remaining lines contain all valid parameter names, and valid parameters are mentioned only once
-    for param in bpp_cdict:
-        # ignore these parameters, as they are only internal to the pipeline
-        if param == "newick" or param == "popsizes":
-            continue
-        # check if parameter is in the list of valid ones
-        if param in valid_BPP_param_names:
-            # check if the parameter is in the list of tracked parameters
-            if param in default_BPP_param:
-                matched_lines[param] = bpp_cdict[param]
-            # collect parameters that are valid but not passed
-            else:
-                ignored_lines[param] = bpp_cdict[param]
-        else:
-            unmatched_lines[param] = bpp_cdict[param]
-
-    # warn the user about ignored lines
-    if len(ignored_lines) > 0:
-        print("\n\tWARNING: The following parameters are present in the BPP control file, but will be ignored by the pipeline:\n")
-        for param in ignored_lines:
-            print(f"\t{param}")
-    
-    # raise error if unmatched parameters are found
-    if len(unmatched_lines) > 0:
-        print("\n\t[X] ERROR: THE FOLLOWING PARAMETERS ARE UNKNOWN TO BPP:\n")
-        for param in unmatched_lines:
-            print(f"\t{param}")
-
-        compat = False
-    
-    # pass completely if no errors are found
-    elif len(unmatched_lines) == 0:
-        print(f"\n\t[*] All parameter names in the BPP control file '{bpp_ctl_file}' are valid\n")
-
-        compat = True
-
-    return compat
-
-
-# check if an alignment file can be loaded in as a valid MSA object
-def check_MSA_filetype(alignmentfile):
-    align_state = check_File(alignmentfile)
-    if align_state:
-        try:
-            # try to load the alignment file to the internal MSA object
-            align = alignfile_to_MSA(alignmentfile)
-            align_state = 1
-        except:
-            align_state = -2 # the file could not be interpreted as a phylip MSA
-
-    return align_state
-
-# check if the file supposted to be an imap is actually an Imap
-def check_Imap_filetype(imapfile):
-    imap_state = check_File(imapfile)
-    if imap_state:
-        try:
-            # try to load the imap in all three modes
-            imap = Imap_to_List(imapfile)
-            imap = Imap_to_PopInd_Dict(imapfile)
-            imap = Imap_to_IndPop_Dict(imapfile)
-            imap_state = 1
-        except:
-            imap_state = -2 # lower errors than -1 correspond to specific problems
-
-    return imap_state
-
-
-
 
 ## BPP SPECIFIC MISSPECIFICATION CHECKING FUNCTIONS
 ##### FIX FIX FIX ADD EXTRA SPECIESMODELPRIOR PARAMETER TO CHECK WHEN CHECKING FOR A11
@@ -547,3 +389,184 @@ def check_GDI_params(gdiparams, param_checked):
         gdiparams_state = -1
 
     return gdiparams_state
+
+
+## CHECK THE TYPE AND INTEGRITY OF SPECIFIC SUPPLIED FILES
+# check that the Master Control file is valid, and only contains valid parameters
+'''
+This function aims to ensure that the master control file only contains calls
+to valid parameters of the pipeline. In other cases, the pipeline may fail in
+unexpected ways, which should be avoided as much as possible.
+'''
+def check_Master_control_filetype(input_mc_file):
+    ## CHECK IF A FILE IS SUPPLIED, OR EXISTS IN THE FIRST PLACE
+    mcf_status = check_File_exists(input_mc_file)
+    if mcf_status == 0:
+        print("[X] ERROR: NO MASTER CONTROL FILE SPECIFIED!")
+        print("\t\t\n-- EXITING PROGRAM --")
+        exit()
+    elif mcf_status == -1:
+        print(f"[X] ERROR: NO FILE OF ANY TYPE AT THE REQUESTED LOCATION: {input_mc_file})")
+        print("\t\t\n-- EXITING PROGRAM --")
+        exit()
+    
+    ## CHECK IF ALL LINES OF THE MASTER CONTROL FILE CORRESPOND TO CORRECTLY NAMED KNOWN PARAMETERS
+    elif mcf_status:
+        # load file, and read into numbered rows
+        lines = readLines(input_mc_file)
+        lines_num = {i:line for i, line in enumerate(lines)}
+            # strip comments, and empty lines
+        lines_num = {key:lines_num[key].split("#")[0] for key in lines_num}
+        lines_num = {key:lines_num[key].split("*")[0] for key in lines_num}
+        lines_num = {key:lines_num[key] for key in lines_num if re.search("\S+", lines_num[key])}
+
+        matched_lines = {}
+        unmatched_lines = copy.deepcopy(lines_num)
+        used_params = []
+        # check if the remaining lines contain all valid parameter names, and valid parameters are mentioned only once
+        for lineindex in lines_num:
+            line = lines_num[lineindex]
+            for param in MCF_param_dict:
+                if param not in used_params:
+                    param_keyphrase = MCF_param_dict[param] # get the keyphrase from the param dict
+                    if param_keyphrase in line:
+                        matched_lines[lineindex] = line
+                        del unmatched_lines[lineindex]
+                        used_params.append(param)
+                        break
+
+        
+        # if all lines were used to specify valid MCF paramters, the program can continue
+        if set(matched_lines) == set(lines_num):
+            print()
+        
+        # if no matching parameters were found, the file is not a master control file
+        elif len(matched_lines) == 0:
+            print(f"[X] ERROR: THE FILE '{input_mc_file}' CONTAINS NO MASTER CONTROL PARAMETERS")
+            exit()
+        
+        # if some of the lines are not valid parameters, the file cannot be correctly interpreted
+        else:
+            # print the lines that were incorrectly found
+            print(f"[X] ERROR: THE MASTER CONTROL FILE '{input_mc_file}' CONTAINS UNRECOGNIZED OR DUPLICATE PARAMETERS")
+            print("\tTHE FOLLOWING LINES ARE UNRECOGNIZED OR DUPLICATES:\n")
+            for nomatch in unmatched_lines:
+                print(f"\tLine {nomatch+1}: {unmatched_lines[nomatch]}")
+            exit()
+
+
+# check if file is a valid BPP control file
+def check_BPP_ctl_filetype(bpp_ctl_file):
+    cfile_state = check_File_exists(bpp_ctl_file)
+    if cfile_state == 1:
+        try:
+            bpp_cdict = bppcfile_to_dict(bpp_ctl_file)
+            cfile_state = 1
+        except:
+            cfile_state = -2 # the file was not able to be interpreted as a BPP command file
+    
+    return cfile_state
+
+
+# check that the BPP control file only contains parameters that are valid for BPP
+'''
+This function aims to check, in advance, if the user supplied BPP control files are valid.
+The function checks to see if all parameters of the control file are in the known valid list,
+and will fail the check if not. Additionally, the module also warns the user if they
+supply a parameter that is ignored by the pipeline. This is needed, because in order to ensure
+no crashes, the pipeline only interprets a limited list of ~20 parameters, for which it
+performs specific checks.
+'''
+def check_BPP_ctl_validity(bpp_ctl_file):
+    bpp_cdict = bppcfile_to_dict(bpp_ctl_file)
+
+    matched_lines = {}
+    ignored_lines = {}
+    unmatched_lines = {}
+    # check if the remaining lines contain all valid parameter names, and valid parameters are mentioned only once
+    for param in bpp_cdict:
+        # ignore these parameters, as they are only internal to the pipeline
+        if param == "newick" or param == "popsizes":
+            continue
+        # check if parameter is in the list of valid ones
+        if param in valid_BPP_param_names:
+            # check if the parameter is in the list of tracked parameters
+            if param in default_BPP_param:
+                matched_lines[param] = bpp_cdict[param]
+            # collect parameters that are valid but not passed
+            else:
+                ignored_lines[param] = bpp_cdict[param]
+        else:
+            unmatched_lines[param] = bpp_cdict[param]
+
+    # warn the user about ignored lines
+    if len(ignored_lines) > 0:
+        print("\n\tWARNING: The following parameters are present in the BPP control file, but will be ignored by the pipeline:\n")
+        for param in ignored_lines:
+            print(f"\t{param}")
+    
+    # raise error if unmatched parameters are found
+    if len(unmatched_lines) > 0:
+        print("\n\t[X] ERROR: THE FOLLOWING PARAMETERS ARE UNKNOWN TO BPP:\n")
+        for param in unmatched_lines:
+            print(f"\t{param}")
+
+        compat = False
+    
+    # pass completely if no errors are found
+    elif len(unmatched_lines) == 0:
+        print(f"\n\t[*] All parameter names in the BPP control file '{bpp_ctl_file}' are valid\n")
+
+        compat = True
+
+    return compat
+
+# check if an alignment file can be loaded in as a valid MSA object
+def check_MSA_filetype(alignmentfile):
+    align_state = check_File_exists(alignmentfile)
+    if align_state == 1:
+        try:
+            # try to load the alignment file to the internal MSA object
+            align = alignfile_to_MSA(alignmentfile)
+            align_state = 1
+        except:
+            align_state = -2 # the file could not be interpreted as a phylip MSA
+
+    return align_state
+
+# check if the file supposted to be an imap is actually an Imap
+def check_Imap_filetype(imapfile):
+    imap_state = check_File_exists(imapfile)
+    if imap_state == 1:
+        try:
+            # try to load the imap in all three modes
+            imap = Imap_to_List(imapfile)
+            imap = Imap_to_PopInd_Dict(imapfile)
+            imap = Imap_to_IndPop_Dict(imapfile)
+            imap_state = 1
+        except:
+            imap_state = -2 # lower errors than -1 correspond to specific problems
+
+    return imap_state
+
+# check that the target output folders of the pipeline do not exist
+def check_folders_do_not_exist  (
+        input_mcfile:                   Master_control_file
+                                ):
+
+    dir_list = os.listdir()
+
+    outfolder = []
+    outfolder.append(f'{input_mcfile[0:-4]}_1_StartDelim')
+    outfolder.append(f'{input_mcfile[0:-4]}_0_StartPhylo')
+    for i in range(1, 51):
+        outfolder.append(f'{input_mcfile[0:-4]}_2_HM_{i}')
+
+    if any(folder in dir_list for folder in outfolder):
+        print(f"[X] ERROR: OUTPUT FOLDERS FOR {input_mcfile} ALREADY PRESENT IN THE DIRECTORY!")
+        print("THE FOLLOWING FOLDERS ARE CAUSING THE ERROR:")
+        for element in dir_list:
+            if element in outfolder:
+                print(element)
+        print("\nConsider changing the working directory, master control file name, or moving previous results to a new folder")
+        exit()

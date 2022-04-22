@@ -45,17 +45,6 @@ from custom_types import HM_decision_parameters
 
 ## CORE HELPER FUNCTIONS
 
-# reads a text file into an array of rows
-def readLines   (
-        file_name:      file_path
-                ) ->    Text_rows_list:
-
-    fileObj = open(file_name, "r")
-    lines = fileObj.read().splitlines() 
-    fileObj.close()
-    
-    return lines 
-
 # return a flattened list from a list of lists
 def flatten (
         t:          list[list]
@@ -87,6 +76,17 @@ def stripall(
         pass
 
     return result
+
+# reads a text file into an array of rows
+def readLines   (
+        file_name:      file_path
+                ) ->    Text_rows_list:
+
+    fileObj = open(file_name, "r")
+    lines = fileObj.read().splitlines() 
+    fileObj.close()
+    
+    return lines 
 
 # strip out any rows with only whitespace characters
 def remove_empty_rows   (
@@ -142,6 +142,15 @@ def overwrite_dict  (
 
 ## GENERAL FILE AND FOLDER I-O
 
+# write a newick tree to a file
+def write_Tree  (
+    tree:               Tree_newick,
+    filename:           file_path,
+                ):
+    
+    f = open(filename, "x")
+    f.writelines([f"{tree}"])
+
 # create a directory if it does not exist, and halt execution of the directory exists
 def create_TargetDir(
         target_dir_name:    file_path
@@ -154,52 +163,6 @@ def create_TargetDir(
     except FileExistsError:
         print(f"ERROR: Directory '{target_dir_name}' already exists.")
         exit()
-
-# get just the filename part of a full file path
-def path_leaf   (
-        path:       file_path
-                ):
-    head, tail = ntpath.split(path)
-    return tail or ntpath.basename(head)
-
-# sets the working directory to the source directory of the master control file, and returns just the name of the MCF
-def set_wd  (
-        mc_file: file_path
-            ) -> Master_control_file:
-
-    working_dir = os.path.dirname(mc_file)
-    
-    os.chdir(working_dir)
-    print(f"\nWorking directory changed to: {working_dir}\n")
-
-    return path_leaf(mc_file)
-
-# create a short master control file if the program is called from the command line with 2 arguments
-def create_auto_MC  (
-        seqfile:    Phylip_MSA_file, 
-        Imapfile:   Imap_file
-                    ) -> Master_control_file:
-
-    filename = "AutoMC.txt"
-    f = open(filename, "x")
-    f.writelines([f"seqfile = {seqfile}\n", f"Imapfile = {Imapfile}\n" ])
-
-    return filename
-
-# create a target directory and automatic control file    
-def initialize  (
-        seqfile, 
-        Imapfile,
-        target_dir_name:    file_path
-                ):   
-
-    if not os.path.exists(target_dir_name):
-        os.makedirs(target_dir_name)
-
-    os.chdir(target_dir_name)
-    print(f"\nWorking directory changed to: {target_dir_name}\n")
-
-    return create_auto_MC(seqfile, Imapfile)
 
 ## PRINT HELPER FUNCTIONS
 
@@ -268,10 +231,6 @@ def read_MCF_param  (
     matches = str([match for match in input_text if target_param in match])
     try:
         result = matches.split("=")[1][:-2]
-        # try:
-        #     result = result.split("#")[0]
-        # except:
-        #     pass
         try:
             while result[0] == " " or result[-1] == " ":
                 result = result.strip()
@@ -358,6 +317,7 @@ def alignfile_to_MSA(
 
 
 ## IMAP I-O FUNCTIONS
+
 # read the Imap text file to return a list with the individual ids and population assignments
 def Imap_to_List(
         imap_file:      Imap_file
@@ -502,7 +462,7 @@ def BPP_run (
         print(f"{clprnt.end}")
     
     except:
-        print("[X] ERROR: THE FILES SUPPLIED TO BPP CAUSE A CRASH")
+        print(f"{clprnt.end}\n[X] ERROR: UNEXPECTED EXIT FROM BPP")
         exit()
 
 # extract the most probable species tree from the "outfile" produced by BPP A01 or BPP A11

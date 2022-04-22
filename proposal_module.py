@@ -117,15 +117,15 @@ def remap_from_tree (
 
 # writes the remap proposed by the program to a new imap list
 def remap_to_imapList   (
-        imap_base:              Imap_list, 
+        indpop_dict, 
         remap:                  Alias_dict
                         ) ->    Imap_list:
 
     IDs = []
     pop = []
-    for ind in imap_base:
+    for ind in indpop_dict:
         IDs.append(ind)
-        pop.append(remap[imap_base[ind]])
+        pop.append(remap[indpop_dict[ind]])
 
     return [IDs, pop]
 
@@ -153,9 +153,6 @@ def get_HM_StartingState(
         halt_pop_number = len(tree) # the program should always end if all possible nodes were split
     
     return starting_pops, halt_pop_number
-
-# print(get_HM_StartingState("(((A, B), CD), X);", "merge"))
-# print(get_HM_StartingState("(((A, B), CD), X);", "split"))
 
 
 # generate the proposal for which populations should be removed or added to the accepted list, depending on the mode
@@ -198,3 +195,26 @@ def HMproposal  (
 
     # return the three components of the proposal
     return prop_change, proposed_tree, proposed_imap
+
+def get_HM_results  (
+        guide_tree_newick:  Tree_newick, 
+        base_indpop_dict, 
+        current_pops_list:  Population_list, 
+                ):
+
+    # transform newick tree to ete3, and name all the internal nodes
+    guide_ete3_tree = Tree(guide_tree_newick)
+    guide_ete3_tree = name_Internal_nodes(guide_ete3_tree)
+    
+    resulting_remap = remap_from_tree(guide_ete3_tree, current_pops_list)
+    
+    # imap corresponding to the new proposal
+    resulting_imap = remap_to_imapList(base_indpop_dict, resulting_remap)
+    
+    # tree topology corresponding to the accepted populations
+    result_tree = copy.deepcopy(guide_ete3_tree)
+    result_tree.prune(current_pops_list)
+
+    tree = tree_To_Newick(result_tree)
+
+    return resulting_imap, tree

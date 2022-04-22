@@ -20,7 +20,7 @@ MCF_param_dict =    {
 "ctl_file_phylo":"BPP A01 starting phylogeny inference",
 "ctl_file_delim":"BPP A11 starting delimitation",           
 "ctl_file_HM"   :"BPP A00 HM parameter inference",
-"target_dir"    :"target directory",  
+"working_dir"   :"working directory",  
 # parameters for the merge decisions
 "mode"          :"HM mode",
 "GDI_thresh"    :"GDI threshold",
@@ -76,7 +76,7 @@ master_Control_feedback =   {
                     0 :"(~) BPP A00 HM Parameter Inference control file not specified",
                     1 :"[*] BPP A00 HM Parameter Inference control file successfully found",
                     }, 
-"target_dir":      {-1:"TEST",
+"working_dir":     {-1:"TEST",
                     0 :"TEST",
                     1 :"TEST"
                     },
@@ -262,7 +262,7 @@ default_BPP_param =    {
 'tauprior':             '?', 
 'finetune':             '1: .01 .0001 .005 .0005 .2 .01 .01 .01', 
 'print':                '1 0 0 0', 
-'burnin':               '5000', 
+'burnin':               '2000', 
 'sampfreq':             '2', 
 'nsample':              '5000', 
 'threads':              '1 ',

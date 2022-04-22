@@ -52,11 +52,11 @@ def find_initial_State  (
     tree_state = get_Tree(mc_dict)
     
     # program states are entered in this order, depending on whether a tree for a given stage was specified
-        # if a guide tree for the HM stage is specified, skip all stages before HM
+        # if a guide tree for the HM stage is specified in the MCF, skip all stages before HM
     if tree_state["tree_HM"] != "?":
         p_state = 3
         print(f"HM guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_HM']}")
-        # if a starting tree for A11 is specified, skip all other stages before
+        # if a starting tree for A11 is specified in the MCF, skip all other stages before
     elif tree_state["tree_start"] != "?":
         p_state = 2
         print(f"Starting Delimitation guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_start']}")
@@ -208,4 +208,6 @@ def controlled_BPP_parameter_check  (
                         if check_BPP_param(A00_param, A00_source, "A00", after_A11 = True):
                             compatible = True
 
-    return compatible
+    ## EXIT PROGRAM IF INCOMPATIBILITIES ARE FOUND
+    if compatible == False:
+        exit()

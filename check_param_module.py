@@ -11,7 +11,7 @@ from helper_functions import pretty_Table
 from helper_functions import read_MasterControl
 
 # CHECKING HELPER DEPENDENCIES
-from check_helper_functions import check_Newick
+from check_helper_functions import check_Newick, check_folders_do_not_exist
 from check_helper_functions import check_Numeric
 from check_helper_functions import check_Tauprior
 from check_helper_functions import check_Thetaprior
@@ -68,6 +68,8 @@ def check_Master_Control(
     check_Master_control_filetype(input_control_file)
     param = read_MasterControl(input_control_file)
 
+    check_folders_do_not_exist(input_control_file)
+
     par_check = {key:0 for key in param}
 
     ## SHALLOW CHECKING OF MISSPECIFICATION
@@ -114,7 +116,7 @@ def check_Master_Control(
         print(f"\n\t[*] No errors found during inital check of {input_control_file}")
     
     elif error_n > 0:
-        print(f"\n{error_n} [X] ERROR(S) FOUND IN: '{input_control_file}'. PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
+        print(f"\n[X] {error_n} ERROR(S) FOUND IN: '{input_control_file}'. PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
         exit()
 
 # check if the user supplied parameters to various BPP modes are correctly specified

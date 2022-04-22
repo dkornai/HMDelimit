@@ -36,8 +36,8 @@ def get_Name_TauTheta_dict  (
     lines = readLines(BPP_outfile)
     relevant_index = lines.index("List of nodes, taus and thetas:") # find the line where the node labels are listed
     lines = lines[relevant_index+2:]
-    tau_dict = {line.split()[3]:float(line.split()[1]) for line in lines if float(line.split()[1]) != 0}
-    theta_dict = {line.split()[3]:float(line.split()[2]) for line in lines}
+    tau_dict = {line.split()[3]:float(line.split()[1]) for line in lines if float(line.split()[1]) != 0} #0 values excluded because they only occur when tau is not estimated
+    theta_dict = {line.split()[3]:float(line.split()[2]) for line in lines if float(line.split()[2]) != -1} #-1 values excluded because they only occur when theta is not estimated (one seq for the population)
 
     return tau_dict, theta_dict
 
@@ -330,17 +330,23 @@ def decisionUserFeedback(
     results_colnames.extend([f"{mode} ACCEPTED"])
     
     # print a table detailing all results to the user
-    print("\nTABLE OF RESULTS:\n")
-    pretty_Table(results_table, results_colnames)
     print()
+    pretty_Table(results_table, results_colnames)
 
     # print the list of accepted proposals
     if len(decision) == 0:
-        print(f"NO PROPOSALS TO {mode} WERE ACCEPTED")
+        print(f"\nNO PROPOSALS TO {mode} WERE ACCEPTED")
     else:
-        print(f"THE FOLLOWING PROPOSALS TO {mode} WERE ACCEPTED:")
-        for i, pair in enumerate(decision):
-            print(f"{i+1}) {str(pair)[1:-2]}")
+        if mode == "MERGE":
+            print(f"\nTHE FOLLOWING PROPOSALS TO MERGE WERE ACCEPTED:")
+            for i, pair in enumerate(decision):
+                merged_name = str(pair)[1:-1].split(', '); merged_name = [element.replace("'", "") for element in merged_name]
+                print(f"{i+1}) {str(pair)[1:-1]} -> '{''.join(merged_name)}'")
+        elif mode == "SPLIT":
+            print(f"\nTHE FOLLOWING PROPOSALS TO SPLIT WERE ACCEPTED:")
+            for i, pair in enumerate(decision):
+                merged_name = str(pair)[1:-1].split(', '); merged_name = [element.replace("'", "") for element in merged_name]
+                print(f"{i+1}) '{''.join(merged_name)}' -> {str(pair)[1:-1]}")
 
     
 
@@ -361,10 +367,6 @@ def implement_decision  (
     elif hm_param["mode"] == "split":
         new_accepted_pops = previous_pops + flattened_decision_list
     
-    print("\nACCORDINGLY, THE LIST OF POPULATIONS AND ANCESTRAL POPULATIONS THAT ARE CURRENTLY ACCEPTED AS SPECIES IS:\n")
-    for population in new_accepted_pops:
-        print(f"\t{population}")
-    print()
 
     return new_accepted_pops
 
@@ -388,7 +390,7 @@ def stop_check  (
     if len(decision) == 0:
         to_iterate = False
         
-        print(f"AS ALL {mode} PROPOSALS WERE REJECTED, NO FURTHER PROPOSALS CAN BE MADE!")
+        print(f"AS ALL {mode} PROPOSALS WERE REJECTED, NO FURTHER STEPS CAN BE MADE!")
     
     #    B) the delimitation has reached either the root, or the guide tree, and no further moves can be made
     elif len(new_accepted_pops) == halt_pop_number:
@@ -414,7 +416,7 @@ def decisionModule  (
         halt_pop_number:    int
                     ) ->    tuple[Population_list, bool]:
 
-    print("\nMAKING DECISIONS BASED ON BPP MODEL RESULTS")
+    print("MAKING DECISIONS BASED ON BPP MODEL RESULTS")
 
     # extract the parameter values relevant to the decision
     demog_param = get_demographic_param(BPP_outfile, proposed_changes, hm_param)
