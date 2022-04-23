@@ -1,5 +1,5 @@
 # HMDelimit
-This repo holds the python source files for a species delimitation pipeline based on the work of Leache et al 2019.
+This repo holds the python source files for a multilocus species delimitation pipeline.
 ### Methods:
 The pipeline performs multilocus species delimitation by combining the use of BPP, and a metric of speciation called the Genomic Divergence Index(GDI). Informed use of the pipeline requires that the user be familiar with the GDI, and how it relates to species delimitation. 
 ## A simple example:
