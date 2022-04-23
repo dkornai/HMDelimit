@@ -115,7 +115,7 @@ def remap_from_tree (
     
     return remap_dict
 
-# writes the remap proposed by the program to a new imap list
+# remaps the individuals from the base indpop dict to the currently accepted populations
 def remap_to_imapList   (
         indpop_dict, 
         remap:                  Alias_dict

@@ -110,6 +110,7 @@ def controlled_BPP_cfile_check  (
     A11_ctl = mc_dict['ctl_file_delim']
     A00_ctl = mc_dict['ctl_file_HM']
     
+    ## P STATE DEPENDENT CHECKING
     all_compatible = []
         
     if   p_state == 3:

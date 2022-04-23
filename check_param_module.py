@@ -28,6 +28,7 @@ from check_helper_functions import check_SandT_popsizes
 from check_helper_functions import check_ValueIsFrom
 from check_helper_functions import check_BPP_ctl_filetype
 from check_helper_functions import check_nloci_MSA_compat
+from check_helper_functions import check_Threads_MSA_compat
 from check_helper_functions import check_Threads_nloci_compat
 
 # CONFLICT CHECKING DEPENDENCIES
@@ -68,6 +69,7 @@ def check_Master_Control(
     check_Master_control_filetype(input_control_file)
     param = read_MasterControl(input_control_file)
 
+    # check that the target folders that the output will be written to do not exist
     check_folders_do_not_exist(input_control_file)
 
     par_check = {key:0 for key in param}
@@ -183,9 +185,12 @@ def check_BPP_param (
     # check that the number of loci requested is not greater than the amount available in the MSA
     if par_check["nloci"] and par_check["seqfile"]:
         par_check["nloci"] = check_nloci_MSA_compat(param["nloci"], param["seqfile"])
-    # chcek that the number of threads requested does not exceed the number of loci in the MSA
-    if par_check["nloci"] and par_check["threads"]:
-        par_check["threads"] = check_Threads_nloci_compat(param["threads"], param["nloci"])
+    # check that the number of threads requested does not exceed the number of loci in the MSA
+    if par_check["threads"] and par_check["seqfile"]:
+        par_check["threads"] = check_Threads_MSA_compat(param["threads"], param["seqfile"])
+    # check that the number of threads requested does not exceed the number of loci requested by the user
+    if par_check["threads"] and par_check["nloci"]:
+        par_check["threads"] = check_Threads_MSA_compat(param["threads"], param["nloci"])
 
     ## PRINT RESULTS OF INITIAL MISSPECIFICATION CHECKING
     par_names = [par_name for par_name in par_check if param[par_name] != "?" or par_check[par_name] < 0]

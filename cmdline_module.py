@@ -2,23 +2,32 @@
 THIS MODULE CONTAINS THE FUNCTIONS REQUIRED FOR INTERPRETING THE 
 COMMAND LINE ARGUMENTS TO THE PROGRAM.
 '''
-
+## DEPENDENCIES
+# STANDARD LIBRARY
 import os
 import os.path
 import ntpath
 import shutil
 from pathlib import Path
 
-from check_helper_functions import check_File_exists, check_Imap_filetype, check_MSA_filetype
+# CHECK HELPERS
+from check_helper_functions import check_File_exists
+from check_helper_functions import check_Imap_filetype
+from check_helper_functions import check_MSA_filetype
 
-from custom_types import Master_control_dict, Master_control_file, file_path
-
-from data_dicts import MCF_param_dict
-
+# HELPER FUNCTIONS
 from helper_functions import pretty
+from helper_functions import stripall
+
+## TYPE HINTS
+from custom_types import Master_control_dict
+from custom_types import Master_control_file
+from custom_types import file_path
 
 ## DATA DEPENDENCIES
 from data_dicts import clprnt
+from data_dicts import MCF_param_dict
+
 
 ## SPECIALIZED HELPER FUNCTIONS
 
@@ -30,9 +39,10 @@ def path_filename   (
     return tail or ntpath.basename(head)
 
 ## COLLECTION OF ARGUMENTS FROM COMMAND LINE
-
-# collect a list of possible arguments from the command line
-def collect_cmdline_args (argument_list):
+# 
+def collect_cmdline_args    (
+        argument_list:              list[str]
+                            ) ->    list[str]:
     # cut off the first argument, as that is just the name of the python file
     argument_list = argument_list[1:]
 
@@ -41,16 +51,31 @@ def collect_cmdline_args (argument_list):
         print("[X] ERROR: PIPELINE CALLED WITHOUT ANY SPECIFEID PARAMETERS")
         exit()
     
-    # check that no parameters were provided with spaces between them:
-    if "=" in argument_list:
-        print("[X] ERROR: ARGUMENT LIST CONTAINS FLOATING '=' VALUES")
-        print("Please provide all parameters as: example_parameter1=example_value1 example_parameter2=example_value2")
+    # check that parameters are separated by commas
+    argument_string = " ".join(argument_list)
+    if "," not in argument_string:
+        print("[X] ERROR: ARGUMENTS MUST BE SEPARATED BY ','")
+        print("Please provide all parameters as: example_parameter1 = example_value1, example_parameter2 = example_value2")
         exit()
     
+    # paste the arguments together,cut up at ',', and remove trailing and leading whitespaces
+    argument_list = argument_string.split(',')
+    argument_list = [stripall(argument) for argument in argument_list]
+
     # verify that no duplicate arguments exist
     if len(set(argument_list)) < len(argument_list):
         print("[X] ERROR: THE SAME ARGUMENT IS CALLED MULTIPLE TIMES!")
         exit()
+
+    return argument_list
+
+# interpret the incoming command line arguments
+def interpret_cmdline_args  (
+        argument_list:              list
+                            ) ->    dict:
+    
+    # filter and chcek for misspecified arguments
+    argument_list = collect_cmdline_args(argument_list)
 
     # see if the "--check" argument is passed, which activates checking only mode
     output_dict = {}
@@ -65,7 +90,8 @@ def collect_cmdline_args (argument_list):
         if "mcf=" in argument_list[0]:
             try:
                 mcf_name = argument_list[0].split("=")[1]
-                output_dict["mcf"] = False
+                mcf_name = stripall(mcf_name)
+                output_dict["mcf"] = stripall(mcf_name)
                 return output_dict
 
             except:
@@ -78,13 +104,14 @@ def collect_cmdline_args (argument_list):
             exit()
 
     # collect the arguments that match the possible parameters of the master control file
-    
+        # parameters are the standard MCF parameters, + an additional working directory parameter
+    pipeline_params = list(MCF_param_dict.keys()) + ["working_dir"]
     output_mc_dict = {}
     correct_arguments = []
     for argument in argument_list:
-        for paramname in MCF_param_dict:
+        for paramname in pipeline_params:
             if paramname in argument:
-                output_mc_dict[paramname] = argument.split("=")[1]
+                output_mc_dict[paramname] = stripall(argument.split("=")[1])
                 correct_arguments.append(argument)
                 break
     
@@ -119,6 +146,7 @@ def collect_cmdline_args (argument_list):
         output_dict = output_dict|output_mc_dict #merge master control dict and check only status
         return output_dict
 
+
 ## SET THE CORRECT WORKING DIRECTORY IF THE PIPELINE WAS PROVIDED A MASTER CONTROL FILE
 def move_to_mc_folder   (
         mc_name:                dict
@@ -149,7 +177,7 @@ def create_auto_MC  (
         mc_dict:            Master_control_dict,
                     ) ->    Master_control_file:
 
-    filename = "AutoMasterControl.txt"
+    filename = "AutoMC.txt"
 
     print(f"\nAUTOMATICALLY GENERATING MASTER CONTROL FILE '{filename}' BASED ON USER INPUT\n")
 
@@ -158,6 +186,9 @@ def create_auto_MC  (
     if file_exists == 1:
         print(f"[X] ERROR: FILE WITH NAME '{filename}' ALREADY EXISTS IN THE DIRECTORY '{os.getcwd()}'")
         exit()
+
+    # strip the working directory parameter, as that is not passed
+    mc_dict.pop("working_dir")
 
     # generate the control file
     f = open(filename, "x")
@@ -256,7 +287,7 @@ def cmdline_interpret   (
                         ):
     print(f"{clprnt.BLUE}<< STARTING HMDELIMIT PIPELINE >>{clprnt.end}\n")
 
-    param = collect_cmdline_args(argument_list)
+    param = interpret_cmdline_args(argument_list)
     
     # separate out the check only parameter
     checkonly = param["checkonly"]

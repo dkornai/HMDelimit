@@ -234,13 +234,14 @@ This is required because the GDI relies on the Theta parameters of atleast one o
 that are under consideration for a merge or split. In other cases, the GDI cannot be calculated, 
 and the pipeline cannot run, except if it only uses ages.
 '''
-def check_GuideTree_Imap_MSA_compat(input_newick, imapfile, alignmentfile):
+def check_GuideTree_Imap_MSA_compat(input_newick, imap, alignmentfile):
+    
     print("\tChecking if the guide tree, Imap file, and MSA are suitable for GDI calculations:\n")
-    print(f"\t1) Imap file   = {imapfile}")
+    print(f"\t1) Imap contents listed above")
     print(f"\t2) MSA file    = {alignmentfile}")
     print(f"\t3) Guide Tree  = {input_newick}\n")
 
-    popind_dict = Imap_to_PopInd_Dict(imapfile)   
+    popind_dict = Imap_to_PopInd_Dict(imap) 
     alignment = alignfile_to_MSA(alignmentfile)
 
     # count the max numer of sequences per population

@@ -213,14 +213,25 @@ def check_Threads(threads):
     return threads_state
 
 # check that the number of threads requested <= the number of loci in the MSA
-def check_Threads_nloci_compat(input_threads, input_nloci):
+def check_Threads_MSA_compat(input_threads, alignmentfile):
     n_threads = int(input_threads.split()[0])
-    n_loci = int(input_nloci)
+    true_nloci = len(alignfile_to_MSA(alignmentfile))
 
-    if n_threads <= n_loci:
+    if n_threads <= true_nloci:
         threads_state = 1
     else:
         threads_state = -3
+
+    return threads_state
+
+# check that the number of threads requested <= the number of loci in the MSA
+def check_Threads_nloci_compat(input_threads, input_nloci):
+    n_threads = int(input_threads.split()[0])
+
+    if n_threads <= int(input_nloci):
+        threads_state = 1
+    else:
+        threads_state = -4
 
     return threads_state
 
@@ -559,6 +570,7 @@ def check_folders_do_not_exist  (
     outfolder = []
     outfolder.append(f'{input_mcfile[0:-4]}_1_StartDelim')
     outfolder.append(f'{input_mcfile[0:-4]}_0_StartPhylo')
+    outfolder.append(f'{input_mcfile[0:-4]}_Final_Result')
     for i in range(1, 51):
         outfolder.append(f'{input_mcfile[0:-4]}_2_HM_{i}')
 

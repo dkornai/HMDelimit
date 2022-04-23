@@ -197,24 +197,3 @@ def uniqueID_decoding   (
     imap = decode_Imap_from_A11_output(imap_list, new_pops, remap_dict)
     
     return tree, imap
-
-
-### TESTS 
-# generate_nonoverlap_IDs("D_L10_imap.txt")
-# generate_nonoverlap_IDs("D_TMS_imap.txt")
-# generate_nonoverlap_IDs("D_TMS_imap_mod.txt")
-# generate_nonoverlap_IDs("D_ROT_imap.txt")
-
-# test_cfile_dict = {"species&tree": "66  D  C6 B BedBug Bug EEEBug F",
-#                   "newick"      :"((((D,C6),(B,BedBug)),Bug), (EEEBug, F));"}     
- 
-# print(enforce_no_overlaps_BPP_cfile(test_cfile_dict, generate_nonoverlap_IDs("D_TMS_imap_mod.txt")))
-
-# print(enforce_no_overlaps_Imap("D_TMS_imap_mod.txt", generate_nonoverlap_IDs("D_TMS_imap_mod.txt")))
-
-# print(decode_Imap_from_A11_output(Imap_to_List("D_TMS_imap_mod_un.txt"), 
-#                                  ['PN_001', 'PN_002', 'PN_003','PN_004', 'PN_000', 'PN_005', 'PN_006'], 
-#                                  generate_nonoverlap_IDs("D_TMS_imap_mod.txt")))
-# print(decode_Imap_from_A11_output(Imap_to_List("D_TMS_imap_mod_un.txt"), 
-#                                  ['PN_001', 'PN_002', 'PN_003PN_004', 'PN_000', 'PN_005PN_006'], 
-#                                  generate_nonoverlap_IDs("D_TMS_imap_mod.txt")))

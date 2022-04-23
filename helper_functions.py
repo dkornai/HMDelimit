@@ -475,16 +475,25 @@ def extract_Speciestree (
         BPP_outfile_name = bppcfile_to_dict(control_file)['outfile']
         # read in the output file
         input_file = readLines(BPP_outfile_name)
-        
+
         # find the index of the row where the most probable trees are outputted, and add one to move to the trees
         rowindex_tree = [i for i, s in enumerate(input_file) if '(A)' in s][0]+1
-        # extract the tree in newick format
-        tree = re.search("\(.+\);" , input_file[rowindex_tree].split("  ")[-1]).group()
-    
-        return tree
+        
+        # extract the tree in newick format if a normal tree output was produced
+        try:
+            tree = re.search("\(.+\);" , input_file[rowindex_tree].split("  ")[-1]).group()
+            return tree
+        
+        # handle edge case where BPP lumps all species into a single species
+        except:
+            tree = re.search(".;" , input_file[rowindex_tree].split("  ")[-1]).group()
+            print('\n>> BPP A11 OUTPUT INDICATES THAT ALL SUPPLIED POPULATIONS ARE A SINGLE SPECIES!')
+            print('THE HIERARCHICAL METHOD SECTION OF THE PIPELINE WILL NOT BE EXECUTED!')
+            
+            exit()
 
     except:
-        print("[X] ERROR: TREE COULD NOT BE EXTRACTED FROM BPP RESULTS")
+        print("\n[X] ERROR: NO TREE COULD NOT BE EXTRACTED FROM BPP RESULTS")
         exit() 
 
 # extract the best supported species list produced by BPP A11

@@ -2,13 +2,15 @@
 # STANDARD LIBRARY
 import os
 import shutil
+from check_conflict_functions import check_GuideTree_Imap_MSA_compat
 
 # HELPER FUNCTIONS
-from helper_functions import Imap_to_IndPop_Dict, Imap_to_List
+from helper_functions import Imap_to_IndPop_Dict 
 from helper_functions import Imap_to_PopInd_Dict
 from helper_functions import create_TargetDir
 from helper_functions import write_Tree
 from helper_functions import pretty
+from helper_functions import Imap_to_List
 from helper_functions import get_HM_parameters
 from helper_functions import dict_to_bppcfile
 from helper_functions import list_To_Imap
@@ -43,7 +45,6 @@ from custom_types import Imap_list
 from custom_types import Tree_newick
 from custom_types import Population_list
 from custom_types import Master_control_file
-from custom_types import HM_mode
 
 
 # infer the starting topology before any delimitation steps
@@ -62,7 +63,7 @@ def StartingTopolgy (
     create_TargetDir(target_dir)
 
     # set up the BPP control file specific to the A01 stage
-    BPP_A01_cfile_name = "BPP_A01_Phylo_Inference.ctl"
+    BPP_A01_cfile_name = "BPP_A01_StartPhylo.ctl"
     BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, BPP_mode = 'A01')
     BPP_cdict = generate_unkown_BPP_param(BPP_cdict)
     BPP_cdict = generate_unknown_BPP_tree(BPP_cdict)
@@ -86,7 +87,7 @@ def StartingTopolgy (
     tree = extract_Speciestree(BPP_A01_cfile_name)
 
     # write resulting tree for manual inspection
-    write_Tree(tree, "OUTPUT_TREE")
+    write_Tree(tree, "OUTPUT_TREE.txt")
 
     os.chdir(parent_dir)
     #-----------------------------#
@@ -113,7 +114,7 @@ def StartingDelimitation(
     create_TargetDir(target_dir)
 
     # set up the BPP control file specific to the A11 stage
-    BPP_A11_cfile_name = "BPP_A11_Starting_Delimitation.ctl"
+    BPP_A11_cfile_name = "BPP_A11_StartDelim.ctl"
     BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, BPP_mode = 'A11')
     BPP_cdict = generate_unkown_BPP_param (BPP_cdict)
     # overwrite any existing starting tree if one was generated in the A01 step or supplied in the MCF
@@ -132,7 +133,8 @@ def StartingDelimitation(
     list_To_Imap(imap_unique_ids, os.path.join(target_dir, imap_unique_ids_name))
     shutil.copy(src = BPP_cdict['seqfile'],  dst = target_dir)
 
-
+        # STARTING PHYLOGENY #
+    ###############################
     #-----------------------------#
     os.chdir(target_dir)
     
@@ -148,11 +150,11 @@ def StartingDelimitation(
         
     # write resulting Imap and tree for manual inspection if needed
     list_To_Imap(imap, "OUTPUT_IMAP.txt")
-    write_Tree(guide_tree, "OUTPUT_TREE")
+    write_Tree(guide_tree, "OUTPUT_TREE.txt")
 
     os.chdir(parent_dir)
     #-----------------------------#
-    
+    ###############################
 
     print("\n>> RESULTS OF THE STARTING DELIMITATION STAGE:")
     print(f"\t\t\nGUIDE TREE:\n\n{guide_tree}")
@@ -193,7 +195,7 @@ def HMIteration (
     prop_imap_name = "proposed_imap.txt"
     
     # set up the control file specific to the A00 stage
-    proposed_cfile_name = "proposed_topology_A00.ctl"
+    proposed_cfile_name = f"BPP_A00_HM_{step}.ctl"
     BPP_cdict = get_known_BPP_param(input_mc_dict = mc_dict, BPP_mode = 'A00')
     BPP_cdict = generate_unkown_BPP_param(BPP_cdict) 
     BPP_cdict = proposal_compliant_BPP_param(BPP_cdict, prop_imap, prop_imap_name, prop_tree)
@@ -206,7 +208,8 @@ def HMIteration (
     shutil.copy(src = BPP_cdict['seqfile'], dst = target_dir)
     dict_to_bppcfile(BPP_cdict, os.path.join(target_dir, proposed_cfile_name))
 
-
+       # STARTING DELIMITATION #
+    ###############################
     #-----------------------------#
     os.chdir(target_dir)
         
@@ -223,11 +226,11 @@ def HMIteration (
     # write tree and imap corresponding to results
     imap, tree = get_HM_results(input_guide_tree, input_indpop_dict, accepted)
     list_To_Imap(imap, "OUTPUT_IMAP.txt")
-    write_Tree(tree, "OUTPUT_TREE")
+    write_Tree(tree, "OUTPUT_TREE.txt")
 
     os.chdir(parent_dir)
     #-----------------------------#
-
+    ###############################
 
     print(f"\n>> RESULTS AFTER ITERATION {step}:\n")
     print("THE POPULATIONS THAT ARE CURRENTLY ACCEPTED AS SPECIES ARE:\n")
@@ -240,6 +243,7 @@ def HMIteration (
 
     return accepted, to_iterate
 
+
 # final wrapper function for starting and iterating through the Hierarchical Method
 def HierarchicalMethod  (
         input_mcfile:       Master_control_file, 
@@ -251,7 +255,8 @@ def HierarchicalMethod  (
  
     mc_dict = read_MasterControl(input_mcfile)
 
-    ## COLLECT NECESSARY STARTING DATA FOR THE HM STAGE
+
+    ## COLLECT NECESSARY DATA FOR INFERRING THE STARTING STA
     # collect the guide tree from the user or the previous stage
     if input_guide_tree == None:
         guide_tree = get_known_BPP_param(mc_dict, "A00")["newick"]
@@ -264,7 +269,8 @@ def HierarchicalMethod  (
     else:
         indpop_dict = Imap_to_IndPop_Dict(input_imap)
     
-    # set up the starting state, depending on the mode, and also infer the edge halting state
+
+    ## SET UP THE STARTING STATE
     accepted_pops, halt_pop_number = get_HM_StartingState(guide_tree, get_HM_parameters(mc_dict)["mode"])
 
     ## PRINT INTRODUCTORY FEEDBACK TO THE USER
@@ -286,7 +292,11 @@ def HierarchicalMethod  (
     print(f"\nSTARTING IMAP:\n")
     pretty(Imap_to_PopInd_Dict(input_imap))
 
+    ## PERFORM CHECK OF SUITABILITY FOR GDI CALCULATIONS
+    check_GuideTree_Imap_MSA_compat(guide_tree, input_imap, get_known_BPP_param(mc_dict, "A00")["seqfile"])
 
+           # HM ITERATIONS #
+    ##############################
     #-----------------------------#
     step = 1
     to_iterate = True
@@ -300,10 +310,14 @@ def HierarchicalMethod  (
                                                 step                = step)
         step += 1
     #-----------------------------#
+    ###############################
 
 
     print(f"{clprnt.BLUE}<< HIERARCHICAL METHOD FINISHED >>{clprnt.end}")
-    print("The imap file and phylogenetic tree corresponding to the final delimitation can be found at:")
-    final_folder = f'{input_mcfile[0:-4]}_2_HM_{step}'
-    print(f'{os.path.join(final_folder, "OUTPUT_IMAP.txt")}')
-    print(f'{os.path.join(final_folder, "OUTPUT_TREE.txt")}')
+    # write final output state to an output folder
+    target_dir = f'{input_mcfile[0:-4]}_Final_Result'
+    create_TargetDir(target_dir_name=target_dir)
+    print("Imap file and phylogenetic tree corresponding to final results can be found in the above folder.")
+    final_folder = f'{input_mcfile[0:-4]}_2_HM_{step-1}'
+    shutil.copy(src = os.path.join(final_folder, "OUTPUT_IMAP.txt"),  dst = target_dir)
+    shutil.copy(src = os.path.join(final_folder, "OUTPUT_TREE.txt"), dst = target_dir)

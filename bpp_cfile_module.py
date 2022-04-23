@@ -131,7 +131,6 @@ formatted by the pipeline to be compatible with the next A00 stage, so the check
 those parameters becomes unnecessary. However, when runnin only the A00 stage, it is
 necessary to check them.
 '''
-### FIX SOURCE IS INCORRECT !!
 def get_user_BPP_param  (
         input_mc_dict:          Master_control_dict, 
         BPP_mode:               BPP_mode,
