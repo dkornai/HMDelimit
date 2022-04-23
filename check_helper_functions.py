@@ -10,7 +10,6 @@ import copy
 import warnings
 import re
 from pathlib import Path
-from custom_types import Master_control_file
 
 # EXTERNAL LIBRARY DEPENDENCIES
 with warnings.catch_warnings():
@@ -109,8 +108,8 @@ def check_ValueIsFrom(input_value, valid_list):
     return value_state
 
 ## BPP SPECIFIC MISSPECIFICATION CHECKING FUNCTIONS
-##### FIX FIX FIX ADD EXTRA SPECIESMODELPRIOR PARAMETER TO CHECK WHEN CHECKING FOR A11
-### FIX FIX FIX ADD LOCUSRATE CHECKER!!!
+### TO DO: ADD EXTRA SPECIESMODELPRIOR PARAMETER CHECK
+### TO DO: ADD LOCUSRATE PARAMETER CHECK
 '''
 These functions check if the user has misspelled or
 misformatted BPP control file parameters
@@ -224,7 +223,7 @@ def check_Threads_MSA_compat(input_threads, alignmentfile):
 
     return threads_state
 
-# check that the number of threads requested <= the number of loci in the MSA
+# check that the number of threads requested <= the number of loci specified by the user
 def check_Threads_nloci_compat(input_threads, input_nloci):
     n_threads = int(input_threads.split()[0])
 
@@ -263,7 +262,7 @@ def check_Print(printparam):
 
     return printstate
 
-# check that the target output files are single files and not in other folders.
+# check that the target output files are text files
 def check_Outfilename(filename):
     if filename == "?":
         file_state = 0
@@ -561,9 +560,7 @@ def check_Imap_filetype(imapfile):
     return imap_state
 
 # check that the target output folders of the pipeline do not exist
-def check_folders_do_not_exist  (
-        input_mcfile:                   Master_control_file
-                                ):
+def check_folders_do_not_exist(input_mcfile):
 
     dir_list = os.listdir()
 

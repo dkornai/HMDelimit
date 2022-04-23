@@ -38,8 +38,8 @@ def path_filename   (
     head, tail = ntpath.split(path)
     return tail or ntpath.basename(head)
 
-## COLLECTION OF ARGUMENTS FROM COMMAND LINE
-# 
+## GETTING PIPELINE ARGUMENTS FROM THE COMMAND LINE
+# read in the raw command line parameters, and ensure they are formatted correctly.
 def collect_cmdline_args    (
         argument_list:              list[str]
                             ) ->    list[str]:
@@ -233,7 +233,7 @@ def initialize_with_autoMC  (
         print(f"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION: {Imapfile}")
         file_verif["Imap"] = False
 
-    #### FIX VERIFY THAT THE TARGET DIRECTORY IS LEGITIMATE    
+    ### TO DO: VERIFY THAT THE TARGET DIRECTORY IS LEGITIMATE    
 
     # exit if any of the file checks failed
     if file_verif["Imap"] == False or file_verif["seq"] == False:
