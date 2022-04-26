@@ -115,7 +115,7 @@ def controlled_BPP_cfile_check  (
         
     if   p_state == 3:
         if A00_ctl != "?":
-            print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}\n")
+            print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}")
         
         if A00_ctl != "?":
             print(f"\n\tCHECKING SUPPLIED A00 CONTROL FILE: {A00_ctl}")
@@ -126,7 +126,7 @@ def controlled_BPP_cfile_check  (
 
     elif p_state == 2:
         if A11_ctl != "?" or A00_ctl != "?":
-            print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}\n")
+            print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}")
         
         if A11_ctl != "?":
             print(f"\n\tCHECKING SUPPLIED A11 CONTROL FILE: {A11_ctl}")
@@ -143,7 +143,7 @@ def controlled_BPP_cfile_check  (
         
     elif p_state == 1:
         if A11_ctl != "?" or A00_ctl != "?" or  A01_ctl != "?":
-            print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}\n")
+            print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}")
         
         if A01_ctl != "?":
             print(f"\n\tCHECKING SUPPLIED A01 CONTROL FILE: {A01_ctl}")

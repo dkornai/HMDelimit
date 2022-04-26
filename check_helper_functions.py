@@ -19,6 +19,7 @@ with warnings.catch_warnings():
 # HELPER FUNCTION DEPENDENCIES
 from helper_functions import alignfile_to_MSA
 from helper_functions import readLines
+from helper_functions import remove_empty_rows
 from helper_functions import bppcfile_to_dict
 from helper_functions import Imap_to_IndPop_Dict
 from helper_functions import Imap_to_List
@@ -77,21 +78,37 @@ def check_Newick(tree):
     return tree_state
 
 # check if a single numeric parameter is supplied in the correct format and range
-def check_Numeric(value, float_or_int, min = -1000000000, max = 100000000):
+def check_Numeric(value, statement = None, float_or_int = "f",):
+    # this module uses the eval function, which should only be used very very cautiously
+    if statement != None:
+        try: 
+            # check the input conforms to the standard
+            if not re.match("[-<>=x0-9]", statement):
+                print("WARNING WARNING INCORRECT STATEMENT USED IN LITERAL EVAL")
+                exit()
+        except:
+            print("WARNING WARNING INCORRECT STATEMENT USED IN LITERAL EVAL")
+            exit()
+    
+    # default statement that accepts basically anything
+    else: statement = "-100000000<x<100000000"
+
+    # actual checking of number
     numeric_state = -1
     try:
-        num = float(value)
+        x = float(value)
         if float_or_int == "i":
-            if num.is_integer() == True and min < num < max:
+            if x.is_integer() and eval(statement):
                 numeric_state = 1
         elif float_or_int == "f":
-            if min < num < max:
+            if eval(statement):
                 numeric_state = 1
     except:
         if value == "?":
             numeric_state = 0
     
     return numeric_state
+
 
 # check if a value is from a presupplied list of acceptable results
 def check_ValueIsFrom(input_value, valid_list):
@@ -123,10 +140,9 @@ def check_Finetune(finetune):
             ft_state = -1
             ft = finetune.split(" ")
             # check if the first finetune is 0 or 1 followed by a ":", and the remainders are integers
-            if float(ft[0][0]) == 0 or float(ft[0][0]) == 1:
-                if ft[0][1] == ":":
-                    if all(isinstance(float(x), float) for x in ft[1:]) and all(0 < float(x) < 10 for x in ft[1:]):
-                        ft_state = 1
+            if ft[0] == "0" or ft[0] == "1" or ft[0] == "1:":
+                if all(check_Numeric(value, "0<=x<=10") for value in ft[1:]):
+                    ft_state = 1
                 
         except:
             ft_state = -1
@@ -307,12 +323,8 @@ def check_speciesdelimitation(sd):
         try:
             sd_state = -1 
             sdplit = sd.split()
-            # if the line is only "1", it is accepted
-            if len(sdplit) == 1:
-                if sdplit[0] == "1":
-                    sd_state = 1
             # if the line starts with "1 0..." this corresponds to eq3 and eq4 in Yang & Rannala (2010)
-            elif sdplit[0] == "1" and sdplit[1] == "0" and len(sdplit) == 3:
+            if sdplit[0] == "1" and sdplit[1] == "0" and len(sdplit) == 3:
                 if 0 <float(sdplit[2]) < 10:
                     sd_state = 1
             # if the line starts with "1 1..." this corresponds to eq6 and eq7 in Yang & Rannala (2010)
@@ -373,6 +385,30 @@ def check_BPP_mode(sd, st, BPP_mode):
             st_state = -1
         
     return sd_state, st_state
+
+# check locusrate:
+def check_locusrate(locusrate):
+    if locusrate == "?":
+        l_state = 0
+    else:
+        try:
+            l_state = -1
+            lr_par = locusrate.split()
+            if len(lr_par) == 1 and lr_par[0] == "0":
+                l_state = 1            
+            
+            elif len(lr_par) == 4:
+                if lr_par[0] == "1" and all(check_Numeric(value, "0<x<15") for value in lr_par[1:3]):
+                    l_state = 1
+            
+            elif len(lr_par) == 5:
+                if lr_par[0] == "1" and all(check_Numeric(value, "0<x<15") for value in lr_par[1:3]) and (lr_par[4] in ["iid", "dir"]):
+                    l_state = 1
+        except:
+            l_state = -1 # wrong format
+
+    return l_state
+
 
 ## HM PARAMETER SPECIFIC CHECKERS
 '''
@@ -549,11 +585,17 @@ def check_Imap_filetype(imapfile):
     imap_state = check_File_exists(imapfile)
     if imap_state == 1:
         try:
-            # try to load the imap in all three modes
-            imap = Imap_to_List(imapfile)
-            imap = Imap_to_PopInd_Dict(imapfile)
-            imap = Imap_to_IndPop_Dict(imapfile)
-            imap_state = 1
+            # detect if the file contains more than two columns
+            imap_rows = readLines(imapfile)
+            imap_lines = remove_empty_rows(imap_rows)
+            if any(len(line.split(None)) > 2 for line in imap_lines):
+                imap_state = -2
+            else:
+                # try to load the imap in all three modes
+                imap = Imap_to_List(imapfile)
+                imap = Imap_to_PopInd_Dict(imapfile)
+                imap = Imap_to_IndPop_Dict(imapfile)
+                imap_state = 1
         except:
             imap_state = -2 # lower errors than -1 correspond to specific problems
 

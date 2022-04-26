@@ -390,13 +390,13 @@ def stop_check  (
     if len(decision) == 0:
         to_iterate = False
         
-        print(f"AS ALL {mode} PROPOSALS WERE REJECTED, NO FURTHER STEPS CAN BE MADE!")
+        print(f"\nAS ALL {mode} PROPOSALS WERE REJECTED, NO FURTHER STEPS CAN BE MADE!")
     
     #    B) the delimitation has reached either the root, or the guide tree, and no further moves can be made
     elif len(new_accepted_pops) == halt_pop_number:
         to_iterate = False
         
-        print(f"AS THE ACCEPTED TOPOLOGY {end_topo}, NO FURTHER {mode} PROPOSALS CAN BE MADE!")
+        print(f"\nAS THE ACCEPTED TOPOLOGY {end_topo}, NO FURTHER {mode} PROPOSALS CAN BE MADE!")
 
     # if none of the end conditions were reached, continue the program
     else:

@@ -1,0 +1,23 @@
+# simplest demos
+python3 HMDelimit.py Imapfile=Test_Data/D_HL_imap.txt, seqfile=Test_Data/D_HL_align.txt, working_dir = Test_Results/D_HL
+
+# slighly more complex demos
+python3 HMDelimit.py Imapfile=Test_Data/D_ROT_imap.txt, seqfile=Test_Data/D_ROT_align.txt, working_dir = Test_Results/D_ROT, threads = 2, nsample = 12000
+
+# demonstration of error checking capabilities
+python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/align_mod.txt,
+python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/align_mod.txt, seqfile=Data_Sets/TMS_2019/imap.txt
+python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/align_mod.txt, seqfile=Data_Sets/TMS_2019/imap.txt, working_dir = Test_Results/error_1, --check
+python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, seqfile=Data_Sets/TMS_2019/D_TMS_imap.txt, working_dir = Test_Results/error_2, test_param = 4, --check
+python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, seqfile=Data_Sets/TMS_2019/D_TMS_imap.txt, working_dir = Test_Results/error_3, threads = 48, nsample = 0, tauprior = 4, gdi_thresh = 4, --check
+python3 HMDelimit.py seqfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, Imapfile=Data_Sets/TMS_2019/D_TMS_imap_mod.txt, working_dir = Test_Results/error_4, --check
+
+# demonstration of using the MCF with mutation rates
+python3 HMDelimit.py mcf = Data_Sets/Humans_2019/MC.txt,
+
+# demonstration of using a BPP control file for the final stage
+python3 HMDelimit.py mcf = Data_Sets/Lizard_2010/D_L10_MC.txt,
+
+# most complex demonstration
+python3 HMDelimit.py mcf = Data_Sets/Ants_2021/MC.txt, --check
+python3 HMDelimit.py mcf = Data_Sets/Ants_2021/MC.txt,

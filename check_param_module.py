@@ -30,6 +30,7 @@ from check_helper_functions import check_BPP_ctl_filetype
 from check_helper_functions import check_nloci_MSA_compat
 from check_helper_functions import check_Threads_MSA_compat
 from check_helper_functions import check_Threads_nloci_compat
+from check_helper_functions import check_locusrate
 
 # CONFLICT CHECKING DEPENDENCIES
 from check_conflict_functions import check_Imap_Tree_compat
@@ -86,19 +87,19 @@ def check_Master_Control(
 
     # parameters for the merge decisions
     par_check["mode"]           = check_ValueIsFrom(param["mode"], ["merge", "split"])
-    par_check["GDI_thresh"]     = check_Numeric(param["GDI_thresh"], "f", min = 0, max = 1)
-    par_check["generations"]    = check_Numeric(param["generations"], "i", min = 1, max = 1000000)
-    par_check["mutationrate"]   = check_Numeric(param["mutationrate"], "f", min = 0, max = 1)
+    par_check["GDI_thresh"]     = check_Numeric(param["GDI_thresh"], "0<x<1")
+    par_check["generations"]    = check_Numeric(param["generations"], "100<=x<=1000000","i")
+    par_check["mutationrate"]   = check_Numeric(param["mutationrate"], "0<x<1")
     par_check["HM_decision"]    = check_GDI_params(param["HM_decision"], par_check)
     
     # parameters passed to BPP instances
-    par_check["seed"]           = check_Numeric(param["seed"], "i", min = -10000)
+    par_check["seed"]           = check_Numeric(param["seed"], "-1<=x","i")
     par_check['thetaprior']     = check_Thetaprior(param['thetaprior'])
     par_check['tauprior']       = check_Tauprior(param['tauprior'])
     par_check['finetune']       = check_Finetune(param['finetune'])
-    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "i", min = 0, max = 100)
-    par_check["nsample"]        = check_Numeric(param["nsample"], "i", min = 1000)
-    par_check["burnin"]         = check_Numeric(param["burnin"], "i", min = 200)
+    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "0<x<100", "i")
+    par_check["nsample"]        = check_Numeric(param["nsample"], "1000<=x", "i")
+    par_check["burnin"]         = check_Numeric(param["burnin"], "200<=x","i")
     par_check['threads']        = check_Threads(param['threads'])
     
 
@@ -111,11 +112,10 @@ def check_Master_Control(
 
 
     ## MAKE FINAL DECISION TO PROCEED OR NOT
-    print("\n\tSUMMARIZED RESULTS:")
     error_n = sum(i < 0 for i in list(par_check.values()))
     
     if   error_n == 0:
-        print(f"\n\t[*] No errors found during inital check of {input_control_file}")
+        print(f"\n[*] No errors found during inital check of {input_control_file}")
     
     elif error_n > 0:
         print(f"\n[X] {error_n} ERROR(S) FOUND IN: '{input_control_file}'. PLEASE READ THE FEEDBACK, AND CONSULT THE MANUAL!")
@@ -168,19 +168,20 @@ def check_BPP_param (
     # check model related parameters
     par_check["species&tree"]   = check_SandT_popsizes(param["species&tree"], param["popsizes"])
     par_check['newick']         = check_Newick(param['newick'])
-    par_check['nloci']          = check_Numeric(param['nloci'], "i", min = 0)       
+    par_check['nloci']          = check_Numeric(param['nloci'], "0<x","i")       
     par_check["cleandata"]      = check_ValueIsFrom(param["cleandata"], ["0","1"])       
     par_check['thetaprior']     = check_Thetaprior(param['thetaprior'])
     par_check['tauprior']       = check_Tauprior(param['tauprior'])
     par_check['finetune']       = check_Finetune(param['finetune'])
     
     # check MCMC related parameters
-    par_check['seed']           = check_Numeric(param["seed"], "i", min = -10000)
+    par_check['seed']           = check_Numeric(param["seed"], "-1<=x","i")
     par_check['print']          = check_Print(param["print"])
-    par_check["burnin"]         = check_Numeric(param["burnin"], "i", min = 200) 
-    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "i", min = 0, max = 100)
-    par_check["nsample"]        = check_Numeric(param["nsample"], "i", min = 1000) 
+    par_check["burnin"]         = check_Numeric(param["burnin"], "200<=x","i")
+    par_check["sampfreq"]       = check_Numeric(param["sampfreq"], "0<x<100", "i")
+    par_check["nsample"]        = check_Numeric(param["nsample"], "1000<=x", "i")
     par_check['threads']        = check_Threads(param['threads'])
+    par_check['locusrate']      = check_locusrate(param['locusrate'])
 
     # check that the number of loci requested is not greater than the amount available in the MSA
     if par_check["nloci"] and par_check["seqfile"]:
@@ -190,7 +191,7 @@ def check_BPP_param (
         par_check["threads"] = check_Threads_MSA_compat(param["threads"], param["seqfile"])
     # check that the number of threads requested does not exceed the number of loci requested by the user
     if par_check["threads"] and par_check["nloci"]:
-        par_check["threads"] = check_Threads_MSA_compat(param["threads"], param["nloci"])
+        par_check["threads"] = check_Threads_nloci_compat(param["threads"], param["nloci"])
 
     ## PRINT RESULTS OF INITIAL MISSPECIFICATION CHECKING
     par_names = [par_name for par_name in par_check if param[par_name] != "?" or par_check[par_name] < 0]
@@ -222,11 +223,10 @@ def check_BPP_param (
 
 
     ## MAKE FINAL DECISION TO PROCEED OR NOT
-    print("\tSUMMARIZED RESULTS:")
     error_n = sum(i < 0 for i in list(par_check.values()))
     if error_n == 0:
         correctly_specified = True
-        print(f"\n\t[*] No errors found in the user supplied parameters of BPP {BPP_mode}")
+        print(f"\n[*] No errors found in the user supplied parameters of BPP {BPP_mode}")
         
     
     # if erroneous parameters are found, halt execution immediately
@@ -254,7 +254,7 @@ def check_A01_to_A11_compatibility  (
     # this is only the case if the Imap file is identical
     if A01_parameters["Imapfile"] == A11_parameters["Imapfile"]:
         compatible = True
-        print("\t[*] The Imap for the A01 and A11 stages is identical, compatibility is guaranteed!")
+        print("[*] The Imap for the A01 and A11 stages is identical, compatibility is guaranteed!")
 
     else:
         compatible = False
@@ -295,10 +295,10 @@ def check_A11_to_A00_compatibility  (
         # the two stages can be compatible if the MSA files are identical
         if A11_parameters["seqfile"] == A00_parameters["seqfile"]:
             compatible = True
-            print("\t[*] The seqfile for the A11 and A00 stages is identical, compatibility is guaranteed!")
+            print("[*] The seqfile for the A11 and A00 stages is identical, compatibility is guaranteed!")
         elif assert_Imap_Seq_compat(A11_parameters["Imapfile"], A00_parameters["alignmentfile"]):
             compatible = True
-            print("\t[*] The seqfile for the A11 and A00 stages is different, but they reference the same individuals, so comaptibility is guaranteed!")
+            print("[*] The seqfile for the A11 and A00 stages is different, but they reference the same individuals, so comaptibility is guaranteed!")
         else:
             compatible = False
 

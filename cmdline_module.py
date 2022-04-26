@@ -4,6 +4,7 @@ COMMAND LINE ARGUMENTS TO THE PROGRAM.
 '''
 ## DEPENDENCIES
 # STANDARD LIBRARY
+from ast import arguments
 import os
 import os.path
 import ntpath
@@ -43,6 +44,7 @@ def path_filename   (
 def collect_cmdline_args    (
         argument_list:              list[str]
                             ) ->    list[str]:
+    
     # cut off the first argument, as that is just the name of the python file
     argument_list = argument_list[1:]
 
@@ -58,9 +60,10 @@ def collect_cmdline_args    (
         print("Please provide all parameters as: example_parameter1 = example_value1, example_parameter2 = example_value2")
         exit()
     
-    # paste the arguments together,cut up at ',', and remove trailing and leading whitespaces
+    # paste the arguments together,cut up at ',', remove extra whitespaces, and remove any components that are now empty
     argument_list = argument_string.split(',')
     argument_list = [stripall(argument) for argument in argument_list]
+    argument_list = [argument for argument in argument_list if len(argument) > 0]
 
     # verify that no duplicate arguments exist
     if len(set(argument_list)) < len(argument_list):
@@ -87,7 +90,7 @@ def interpret_cmdline_args  (
     # if one argument is present, check that it is the master control file
     if len(argument_list) == 1:
         # if it is the mcf argument
-        if "mcf=" in argument_list[0]:
+        if "mcf" in argument_list[0]:
             try:
                 mcf_name = argument_list[0].split("=")[1]
                 mcf_name = stripall(mcf_name)

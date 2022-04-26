@@ -140,7 +140,7 @@ def count_Seq_Per_Pop   (
     for curr_locus in input_MSA_list:
         # filter out a list of individual ids at a given locus
         curr_id_list = [seq.id for seq in curr_locus]
-        curr_id_list = [re.sub('[a-zA-Z_0-9.]+\^', '', id) for id in curr_id_list]
+        curr_id_list = [id.split("^")[1] for id in curr_id_list]
         # replace individual ids with their population code
         curr_pop_list = [[k for k, v in input_popind_dict.items() if id in v][0] for id in curr_id_list]
         # count the number of sequences associated with each population, and keep track of the highest value

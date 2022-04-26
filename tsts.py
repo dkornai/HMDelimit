@@ -17,15 +17,28 @@
 #       check_Thetaprior("3 0.004 "),
 #       check_Thetaprior("3 0.004 e"),)
 
-# print(check_Numeric("3", "f"), 
-#       check_Numeric("3", "i"),
-#       check_Numeric("3", "f", min = 2, max = 50),
-#       check_Numeric("0.3", "i"),
-#       check_Numeric("0.3", "i", min= 0, max= 1),
-#       check_Numeric("0.3", "i", min= 0, max= 0.2),
-#       check_Numeric("?", "i", min= 0, max= 0.2),
-#       check_Numeric("asdasd", "i", min= 0, max= 0.2),
+# from check_helper_functions import check_Numeric
+# print(
+# #check_Numeric("asd", 0),
+# #check_Numeric("asd", "rm"),
+# check_Numeric("asd"),
+# check_Numeric("6"),
+# check_Numeric("6", "4<x"),
+# check_Numeric("6", "4<x<5"),
+# check_Numeric("6.4", float_or_int="i"),
+# check_Numeric("6.4"),
 # )
+
+# from check_helper_functions import check_locusrate
+# print(
+# check_locusrate("asd"),
+# check_locusrate("0"),
+# check_locusrate("1"),
+# check_locusrate("0 4"),
+# check_locusrate('1 10 10 5 iid'),
+# check_locusrate("1 5")
+# )
+
 
 # # test of make_decision
 # test_dict_for_criteria =   {"+G1+G2+A":{"gdi_1": True,  "gdi_2": True,  "age": True},
