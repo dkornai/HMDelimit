@@ -101,6 +101,9 @@ def check_Master_Control(
     par_check["nsample"]        = check_Numeric(param["nsample"], "1000<=x", "i")
     par_check["burnin"]         = check_Numeric(param["burnin"], "200<=x","i")
     par_check['threads']        = check_Threads(param['threads'])
+    par_check['nloci']          = check_Numeric(param['nloci'], "0<x","i")
+    par_check['locusrate']      = check_locusrate(param['locusrate'])
+    par_check["cleandata"]      = check_ValueIsFrom(param["cleandata"], ["0","1"]) 
     
 
     ## PRINT RESULTS

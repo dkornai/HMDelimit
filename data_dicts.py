@@ -35,7 +35,16 @@ MCF_param_dict =    {
 "nsample"       :"nsample",                            
 "burnin"        :"burnin",
 "threads"       :"threads",
+"nloci"         :"nloci",
+"locusrate"     :"locusrate",
+"cleandata"     :"cleandata",
                     }
+
+# the list of master control file parameters that can be specified from the command line
+command_line_params = list(MCF_param_dict)
+command_line_params.append("working_dir")       # working dir is an extra cmdline specific parameter not notmally used
+command_line_params.remove("tree_start")        # tree data cannot be provided due to the fact that bash hates "()"
+command_line_params.remove("tree_HM")
 
 # contains the written feedback for the checker of the master control file
 master_Control_feedback =   {
@@ -133,7 +142,19 @@ master_Control_feedback =   {
                     0 :" ~  BPP threading not specified",
                     1 :"[*] BPP threading correctly specified",
                     },
-                            }
+"nloci":           {-1:"[X] ERROR: NLOCI NOT A POSITIVE INTEGER\n\n\t Please set to an integer > 1, or leave empty\n",
+                    0 :" ~  nloci not specified",
+                    1 :"[*] nloci correctly specified",
+                    },
+"locusrate":       {-1:"[X] ERROR: LOCUSRATE ERRONEOUSLY SPECIFIED\n\n\t Please check the BPP manual for advice on the parameter, or leave empty\n",
+                    0 :" ~  locusrate not specified",
+                    1 :"[*] locusrate correctly specified",
+                    },
+"cleandata":       {-1:"[X] ERROR: CLEANDATA MUST BE '0' or '1'\n\n\t Please set according to prefernces about ambiguous sites and gaps in the alignment, or leave empty\n",
+                    0 :" ~  cleandata not specified",
+                    1 :"[*] cleandata correctly specified",
+                    },
+                        }
 
 ## DATA USED IN THE HIERARCHICAL METHOD SECTION
 # the empty HM decision parameter dict 
@@ -148,8 +169,8 @@ empty_HM_parameters   = {
 # the default values for HM decision parameters
 default_HM_parameters = {
 "mode":            "merge",  # the program will proceed in merge mode if the user does not specify otherwise
-"GDI_thresh_merge":"0.4",    # popoulations are considered a single species if their GDI values are below this value
-"GDI_thresh_split":"0.5",    # popoulations are considered two species if their GDI values are above this value
+"GDI_thresh_merge":"0.2",    # popoulations are considered a single species if their GDI values are below this value
+"GDI_thresh_split":"0.7",    # popoulations are considered two species if their GDI values are above this value
 "max_gen":         "1000",   # populatioons are considered a single species if they separated less than this many generations ago
 "min_gen":         "10000",  # populations are considered two species if they separated more than this many generations ago
 "mutationrate":    "?",      # default mutation rate is unkown, and if none is provided, the program will not compute the age of the split
@@ -211,6 +232,7 @@ valid_BPP_param_names = [
 'tauprior', 
 'thetaprior', 
 'usedata',
+'threads',
                         ]
 
 # contains the list of parameters that need to be present in a BPP control file
@@ -260,8 +282,8 @@ default_BPP_param =    {
 'finetune':             '1: .01 .0001 .005 .0005 .2 .01 .01 .01', 
 'print':                '1 0 0 0', 
 'burnin':               '2000', 
-'sampfreq':             '2', 
-'nsample':              '5000', 
+'sampfreq':             '1', 
+'nsample':              '20000', 
 'threads':              '1 ',
                         }
 

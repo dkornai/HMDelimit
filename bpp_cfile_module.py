@@ -55,9 +55,9 @@ parameters collected from lower importance sources.
   Together, these default values ensure that the user needs to specify the minimal
   number of parameters in the MCF
 
-2) BPP mode agnostic parameters included in the MCF
+2) BPP mode parameters included in the MCF
     These include "seed", "thetaprior", "tauprior" and also the location of imap
-    and alignment files, and even starting trees.
+    and alignment files, and even the relevant starting trees.
 
   These values are shared between all BPP instances, and enable the user to
   take fine grained control over the relevant parameters of BPP, without having to
@@ -68,17 +68,7 @@ at the "ctl_file_phylo","ctl_file_delim","ctl_file_HM" parameters of the MCF.
 
   This enables users to take complete control over each stage of the process,
   and present different parameters to each mode of BPP. For example, this could
-  be useful if the user wants to use more samples in the A00 stage than during A01
-
-4) The starting tree, or guide tree from the master control file, if they are present.
-    When finding paramters for the A11 mode, a non "?" value for the "tree_start" 
-    parameter of the master control file will overwrite any tree in the dedicated A11 control file.
-    When finding paramters for the A00 mode, a non "?" value for the "tree_HM" 
-    parameter of the master control file will overwrite any tree in the dedicated A00 control file.
-
-  This final behaviour enables the user to supply phylogenetic information to the pipeline
-  without having to make dedicated BPP control files. This makes the pipeline significantly
-  more user friendly
+  be useful if the user wants to use more samples in the A00 stage than during A01.
 '''
 def get_known_BPP_param (
         input_mc_dict:          Master_control_dict, 
@@ -90,8 +80,14 @@ def get_known_BPP_param (
 
     # 2) find any BPP parameters available in the master control dict
     BPP_cdict = overwrite_dict(BPP_cdict, input_mc_dict)
+        # find mode specific MCF trees if avilable
+    if   BPP_mode == "A11":
+        if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
+             BPP_cdict["newick"] = input_mc_dict["tree_start"]
+    elif BPP_mode == "A00":
+        if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
+             BPP_cdict["newick"] = input_mc_dict["tree_HM"]
 
-    
     # 3) if the master control dict specifies a custom control file for the appropriate stage
     stage_code = {"A01":'ctl_file_phylo', "A11":'ctl_file_delim',"A00":'ctl_file_HM'}
     if input_mc_dict[stage_code[BPP_mode]] != "?":
@@ -99,13 +95,7 @@ def get_known_BPP_param (
         user_BPP_cfile = bppcfile_to_dict(input_mc_dict[stage_code[BPP_mode]])
         BPP_cdict = overwrite_dict(BPP_cdict, user_BPP_cfile)
     
-    # 4) final overwrite with MCF trees if available
-    if   BPP_mode == "A11":
-        if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
-             BPP_cdict["newick"] = input_mc_dict["tree_start"]
-    elif BPP_mode == "A00":
-        if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
-             BPP_cdict["newick"] = input_mc_dict["tree_HM"]
+    
 
     return BPP_cdict
 
@@ -139,6 +129,15 @@ def get_user_BPP_param  (
     
     # 0A) find any BPP parameters available in the master control dict
     BPP_cdict = overwrite_dict(empty_BPP_cfile_dict, input_mc_dict)
+        # find mode specific MCF trees if available
+    if   BPP_mode == "A11":
+        if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
+            BPP_cdict["newick"] = input_mc_dict["tree_start"]
+            sourcedict["newick"] = "MCF"
+    elif BPP_mode == "A00":
+        if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
+            BPP_cdict["newick"] = input_mc_dict["tree_HM"]
+            sourcedict["newick"] = "MCF"
     # 0B) keep track of the origin of newly found parameters
     sourcedict = {param:(" - " if (BPP_cdict[param] == "?") else "MCF") for param in BPP_cdict }  
 
@@ -152,16 +151,6 @@ def get_user_BPP_param  (
         for param in BPP_cdict:
             if param in user_BPP_cfile and user_BPP_cfile[param] != "?":
                 sourcedict[param] = f"BPP {BPP_mode} Cfile"
-        
-    # 2AB) final overwrite with MCF trees if available
-    if   BPP_mode == "A11":
-        if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
-            BPP_cdict["newick"] = input_mc_dict["tree_start"]
-            sourcedict["newick"] = "MCF"
-    elif BPP_mode == "A00":
-        if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
-            BPP_cdict["newick"] = input_mc_dict["tree_HM"]
-            sourcedict["newick"] = "MCF"
 
     # 3) if the option to mask the parameters that A00 inherits after running A11 is on, make the following parameters unknown
         # When A00 is run after A11, These parameters depend on the results of A11, which are unpredictable in advance.  
@@ -172,7 +161,6 @@ def get_user_BPP_param  (
         BPP_cdict["popsizes"] = "?"
 
     return BPP_cdict, sourcedict
-
 
 
 # generate parameters with no available defaults or user supplied values

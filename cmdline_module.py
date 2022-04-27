@@ -28,6 +28,7 @@ from custom_types import file_path
 ## DATA DEPENDENCIES
 from data_dicts import clprnt
 from data_dicts import MCF_param_dict
+from data_dicts import command_line_params
 
 
 ## SPECIALIZED HELPER FUNCTIONS
@@ -112,7 +113,7 @@ def interpret_cmdline_args  (
 
     # collect the arguments that match the possible parameters of the master control file
         # parameters are the standard MCF parameters, + an additional working directory parameter
-    pipeline_params = list(MCF_param_dict.keys()) + ["working_dir"]
+    pipeline_params = command_line_params
     output_mc_dict = {}
     correct_arguments = []
     for argument in argument_list:
@@ -136,6 +137,8 @@ def interpret_cmdline_args  (
             # feedback to user if they tried to supply a master control file among multiple arguments
             if "mcf=" in param:
                 print("WARNING: MASTER CONTROL FILE NAME IS NOT A VALID PARAMETER WHEN SUPPLYING MULTIPLE ARGUMENTS")
+            if "tree" in param:
+                print("WARNING: TREE PARAMETERS CAN NOT BE PROVIDED FROM THE COMMAND LINE, ONLY THE MASTER CONTROL FILE")
         exit()
     
     # verify that no matched arguments contain empty values

@@ -1,0 +1,7 @@
+'''
+REQUIRED EXTERNAL PYTHON 3 DEPENDENCIES
+'''
+ete3
+numpy
+pandas
+biopython

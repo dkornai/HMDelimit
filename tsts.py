@@ -186,12 +186,12 @@
 # print("L10")
 # print(autoPrior("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
 
-# from align_imap_module import autoStartingTree
-# print("HL")
-# print(autoStartingTree("Test_Data/D_HL_imap.txt", "Test_Data/D_HL_align.txt"))
-# print("TMS")
-# print(autoStartingTree("Test_Data/D_TMS_imap.txt", "Test_Data/D_TMS_align.txt"))
-# print("ROT")
-# print(autoStartingTree("Test_Data/D_ROT_imap.txt", "Test_Data/D_ROT_align.txt"))
-# print("L10")
-# print(autoStartingTree("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
+from align_imap_module import autoStartingTree
+print("HL")
+print(autoStartingTree("Test_Data/D_HL_imap.txt", "Test_Data/D_HL_align.txt"))
+print("TMS")
+print(autoStartingTree("Test_Data/D_TMS_imap.txt", "Test_Data/D_TMS_align.txt"))
+print("ROT")
+print(autoStartingTree("Test_Data/D_ROT_imap.txt", "Test_Data/D_ROT_align.txt"))
+print("L10")
+print(autoStartingTree("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
