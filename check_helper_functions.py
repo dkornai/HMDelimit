@@ -10,6 +10,7 @@ import copy
 import warnings
 import re
 from pathlib import Path
+import difflib
 
 # EXTERNAL LIBRARY DEPENDENCIES
 with warnings.catch_warnings():
@@ -555,7 +556,12 @@ def check_BPP_ctl_validity(bpp_ctl_file):
     if len(unmatched_lines) > 0:
         print("\n\t[X] ERROR: THE FOLLOWING PARAMETERS ARE UNKNOWN TO BPP:\n")
         for param in unmatched_lines:
-            print(f"\t{param}")
+            # feedback to user if a close match is found
+            closest_match = difflib.get_close_matches(param, valid_BPP_param_names, 1, 0.5)
+            match_text = ''
+            if len(closest_match) > 0:
+                match_text += f"\t -- did you mean '{str(closest_match)[2:-2]}'?"
+            print(f"\t{param}{match_text}")
 
         compat = False
     

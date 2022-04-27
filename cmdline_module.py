@@ -4,12 +4,12 @@ COMMAND LINE ARGUMENTS TO THE PROGRAM.
 '''
 ## DEPENDENCIES
 # STANDARD LIBRARY
-from ast import arguments
 import os
 import os.path
 import ntpath
 import shutil
 from pathlib import Path
+import difflib
 
 # CHECK HELPERS
 from check_helper_functions import check_File_exists
@@ -57,7 +57,8 @@ def collect_cmdline_args    (
     argument_string = " ".join(argument_list)
     if "," not in argument_string:
         print("[X] ERROR: ARGUMENTS MUST BE SEPARATED BY ','")
-        print("Please provide all parameters as: example_parameter1 = example_value1, example_parameter2 = example_value2")
+        print("Please provide all parameters as: 'example_parameter1 = example_value1, example_parameter2 = example_value2'")
+        print("even when providing only the 'mcf' parameter, provide it as: 'mcf=example_mcf,'")
         exit()
     
     # paste the arguments together,cut up at ',', remove extra whitespaces, and remove any components that are now empty
@@ -87,24 +88,27 @@ def interpret_cmdline_args  (
         output_dict["checkonly"] = True
         argument_list.remove("--check")
 
-    # if one argument is present, check that it is the master control file
-    if len(argument_list) == 1:
-        # if it is the mcf argument
-        if "mcf" in argument_list[0]:
-            try:
-                mcf_name = argument_list[0].split("=")[1]
-                mcf_name = stripall(mcf_name)
-                output_dict["mcf"] = stripall(mcf_name)
-                return output_dict
+    # if the master control file argument is present, check that it is the only one
+    
+    # if it is the mcf argument
+    if "mcf" in argument_list[0] and len(argument_list) ==1:
+        try:
+            mcf_name = argument_list[0].split("=")[1]
+            mcf_name = stripall(mcf_name)
+            output_dict["mcf"] = stripall(mcf_name)
+            return output_dict
 
-            except:
-                print("[X] ERROR: MASTER CONTROL FILE NAME EMPTY")
-                exit()
-        # if it is not
-        else:
-            print("[X] ERROR: WHEN ONLY A SINGLE ARGUMENT IS PROVIDED, IT MUST BE A MASTER CONTROL FILE\n")
-            print("set the master control file argument as: mcf=example_mastercontrol_file.txt")
+        except:
+            print("[X] ERROR: MASTER CONTROL FILE NAME EMPTY")
             exit()
+    elif "mcf" in argument_list[0]:
+        print("[X] ERROR: WHEN MASTER CONTROL FILE ARGUMENT IS PROVIDED, NO OTHER PARAMETERS CAN BE SET FROM THE COMMAND LINE")
+        exit()
+    # if it is not
+    elif len(argument_list) == 1:
+        print("[X] ERROR: WHEN ONLY A SINGLE ARGUMENT IS PROVIDED, IT MUST BE A MASTER CONTROL FILE\n")
+        print("set the master control file argument as: mcf=example_mastercontrol_file.txt")
+        exit()
 
     # collect the arguments that match the possible parameters of the master control file
         # parameters are the standard MCF parameters, + an additional working directory parameter
@@ -123,7 +127,13 @@ def interpret_cmdline_args  (
     if len(unrecognized) > 0:
         print("[X] ERROR: THE FOLLOWING ARGUMENTS ARE NOT RECOGNIZED:")
         for param in unrecognized:
-            print(param)
+            # feedback to user if a close match is found
+            closest_match = difflib.get_close_matches(param, pipeline_params, 1, 0.5)
+            match_text = ''
+            if len(closest_match) > 0:
+                match_text += f"\t -- did you mean '{str(closest_match)[2:-2]}'?"
+            print(f"\t{param}{match_text}")
+            # feedback to user if they tried to supply a master control file among multiple arguments
             if "mcf=" in param:
                 print("WARNING: MASTER CONTROL FILE NAME IS NOT A VALID PARAMETER WHEN SUPPLYING MULTIPLE ARGUMENTS")
         exit()

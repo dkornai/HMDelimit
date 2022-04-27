@@ -276,7 +276,7 @@ default_BPP_A01_param =    {
 default_BPP_A11_param =    {
 'outfile':              'startdelim_out.txt', 
 'mcmcfile':             'startdelim_mcmc.txt',
-'speciesdelimitation':  '1 1 2 0.5',
+'speciesdelimitation':  '1 1 2 1',
 'speciestree' :         '1',
 'usedata':              '1', 
                                 }
