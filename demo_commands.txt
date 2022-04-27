@@ -5,15 +5,15 @@ python3 HMDelimit.py Imapfile=Test_Data/D_HL_imap.txt, seqfile=Test_Data/D_HL_al
 python3 HMDelimit.py Imapfile=Test_Data/D_ROT_imap.txt, seqfile=Test_Data/D_ROT_align.txt, working_dir = Test_Results/D_ROT, threads = 2, nsample = 12000
 
 # demonstration of error checking capabilities
-python3 HMDelimit.py mcf = Test_Data/Test_BPP_Control/badMC.txt, --check
 python3 HMDelimit.py Imapfile = asds, seqfle = asdett, workingdir = asd
-python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/align_mod.txt,
 python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/align_mod.txt, seqfile=Data_Sets/TMS_2019/imap.txt
 python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/align_mod.txt, seqfile=Data_Sets/TMS_2019/imap.txt, working_dir = Test_Results/error_1, --check
-python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, seqfile=Data_Sets/TMS_2019/D_TMS_imap.txt, working_dir = Test_Results/error_2, test_param = 4, --check
+python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, seqfile=Data_Sets/TMS_2019/D_TMS_imap.txt, working_dir = Test_Results/error_2, test_random_param = 4, --check
 python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, seqfile=Data_Sets/TMS_2019/D_TMS_imap.txt, working_dir = Test_Results/error_3, threads = 48, nsample = 0, tauprior = 4, gdi_thresh = 4, --check
-python3 HMDelimit.py seqfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, Imapfile=Data_Sets/TMS_2019/D_TMS_imap_mod.txt, working_dir = Test_Results/error_4, --check
+python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, seqfile=Data_Sets/TMS_2019/D_TMS_imap.txt, working_dir = Test_Results/error_3, threads = 48, nsample = 0, tauprior = 4, GDI_thresh = 4, --check
 
+# demonstration of MCF error checking
+python3 HMDelimit.py mcf = Test_Data/Test_BPP_Control/badMC.txt, --check
 
 # demonstration of using the MCF with mutation rates
 python3 HMDelimit.py mcf = Data_Sets/Humans_2019/MC.txt,
