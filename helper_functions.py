@@ -157,18 +157,25 @@ def create_TargetDir(
 
 ## PRINT HELPER FUNCTIONS
 
-# print large control dicts in an easy-to-read way
+# print large dicts in an easy-to-read way
 def pretty  (
         dict:   dict
             ):
     
     longest_key_length = max(map(len, dict))
+    string_values = [str(dict[param]) for param in dict]
+
+    # add newline after each row if the length of the value is too large
+    longest_value_length = max(map(len, string_values))
+    rowend = ""
+    if longest_value_length > 120:
+        rowend = "\n"
     
     for key in dict:
         printkey = str(key)
         while len(printkey) < longest_key_length:
             printkey = printkey + " "
-        print(printkey,"=",dict[key])
+        print(printkey,"=",dict[key],rowend)
     
     print()
 

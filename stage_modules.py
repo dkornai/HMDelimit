@@ -2,7 +2,6 @@
 # STANDARD LIBRARY
 import os
 import shutil
-from check_conflict_functions import check_GuideTree_Imap_MSA_compat
 
 # HELPER FUNCTIONS
 from helper_functions import Imap_to_IndPop_Dict 
@@ -38,6 +37,12 @@ from proposal_module import get_HM_results
 
 # DECISION FUNCTIONS
 from decision_module import decisionModule
+
+# DEEP CONFLICT CHECKING FUNCTIONS
+from check_conflict_functions import check_GuideTree_Imap_MSA_compat
+
+# TREE HELPER FUNCTIONS
+from tree_helper_functions import tree_ASCII
 
 ## DATA DEPENDENCIES
 from data_dicts import clprnt
@@ -290,7 +295,9 @@ def HierarchicalMethod  (
     for population in accepted_pops:
         print(f"\t{population}")
     print()
-    print(f"GUIDE TREE:\n\n{guide_tree}")
+    print(f"GUIDE TREE NEWICK:\n\n{guide_tree}")
+    print("\nGUIDE TREE ASCII:")
+    print(tree_ASCII(guide_tree))
     print(f"\nSTARTING IMAP:\n")
     pretty(Imap_to_PopInd_Dict(input_imap))
 

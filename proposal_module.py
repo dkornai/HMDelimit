@@ -153,13 +153,17 @@ def get_HM_results  (
     
     resulting_remap = remap_from_tree(guide_ete3_tree, current_pops_list)
     
-    # imap corresponding to the new proposal
+    # imap corresponding to the accepted results
     resulting_imap = remap_to_imapList(base_indpop_dict, resulting_remap)
     
     # tree topology corresponding to the accepted populations
-    result_tree = copy.deepcopy(guide_ete3_tree)
-    result_tree.prune(current_pops_list)
-
-    tree = tree_To_Newick(result_tree)
+    # extra condition added due to ete3 error, as ete3 refuses to only return a tree from the root node
+    if len(current_pops_list) == 1:
+        tree = f"({current_pops_list[0]})"
+    # in all other cases:
+    else:
+        result_tree = copy.deepcopy(guide_ete3_tree)
+        result_tree.prune(current_pops_list)
+        tree = tree_To_Newick(result_tree)
 
     return resulting_imap, tree

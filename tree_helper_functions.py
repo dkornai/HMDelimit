@@ -89,3 +89,12 @@ def write_Tree  (
     
     f = open(filename, "x")
     f.writelines([f"{tree}"])
+
+# display the ASCII representation of the tree
+def tree_ASCII  (
+        tree:           Tree_newick
+                ) ->    str:
+
+    etetree = name_Internal_nodes(Tree(tree))
+
+    return etetree.get_ascii()
