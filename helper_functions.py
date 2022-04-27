@@ -142,15 +142,6 @@ def overwrite_dict  (
 
 ## GENERAL FILE AND FOLDER I-O
 
-# write a newick tree to a file
-def write_Tree  (
-    tree:               Tree_newick,
-    filename:           file_path,
-                ):
-    
-    f = open(filename, "x")
-    f.writelines([f"{tree}"])
-
 # create a directory if it does not exist, and halt execution of the directory exists
 def create_TargetDir(
         target_dir_name:    file_path

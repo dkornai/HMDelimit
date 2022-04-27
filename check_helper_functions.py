@@ -26,6 +26,9 @@ from helper_functions import Imap_to_IndPop_Dict
 from helper_functions import Imap_to_List
 from helper_functions import Imap_to_PopInd_Dict
 
+# TREE HELPER DEPENDENCIES
+from tree_helper_functions import name_Internal_nodes
+
 ## DATA DEPENDENCIES
 from data_dicts import HM_decision_criteria
 from data_dicts import valid_BPP_param_names
@@ -64,7 +67,6 @@ def check_Newick(tree):
             # check if the tree can be read in at all
             t = Tree(tree)
             tree_state = 1
-            ##### FIX FIX FIX check if the tree contains repeated node names, or conflicts that will arise from internal node names
             
             # check if the tree contrins polytomies, and return a special error if so
             t_2 = copy.deepcopy(t)
@@ -73,10 +75,19 @@ def check_Newick(tree):
             if rf != 0:
                 tree_state = -2
 
+            # check for conflicts arising from repeated node names
+            node_names = []
+            t = name_Internal_nodes(t)
+            for node in t.traverse("postorder"):
+                node_names.append(node.name)
+            if len(node_names) > len(set(node_names)):
+                tree_state = -3
+
         except:
             tree_state = -1
     
     return tree_state
+
 
 # check if a single numeric parameter is supplied in the correct format and range
 def check_Numeric(value, statement = None, float_or_int = "f",):
@@ -127,7 +138,6 @@ def check_ValueIsFrom(input_value, valid_list):
 
 ## BPP SPECIFIC MISSPECIFICATION CHECKING FUNCTIONS
 ### TO DO: ADD EXTRA SPECIESMODELPRIOR PARAMETER CHECK
-### TO DO: ADD LOCUSRATE PARAMETER CHECK
 '''
 These functions check if the user has misspelled or
 misformatted BPP control file parameters

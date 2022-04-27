@@ -8,7 +8,6 @@ from check_conflict_functions import check_GuideTree_Imap_MSA_compat
 from helper_functions import Imap_to_IndPop_Dict 
 from helper_functions import Imap_to_PopInd_Dict
 from helper_functions import create_TargetDir
-from helper_functions import write_Tree
 from helper_functions import pretty
 from helper_functions import Imap_to_List
 from helper_functions import get_HM_parameters
@@ -18,6 +17,9 @@ from helper_functions import read_MasterControl
 from helper_functions import BPP_run
 from helper_functions import extract_Speciestree
 from helper_functions import extract_Pops
+
+# TREE HELPER FUNCTIONS
+from tree_helper_functions import write_Tree
 
 # BPP CONTROL FILE RELATED FUNCTIONS
 from bpp_cfile_module import get_known_BPP_param 

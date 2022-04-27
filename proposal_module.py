@@ -17,6 +17,12 @@ with warnings.catch_warnings():
 # HELPER FUNCTION DEPENDENCIES
 from helper_functions import flatten
 
+# TREE HELPER DEPENDENCIES
+from tree_helper_functions import name_Internal_nodes
+from tree_helper_functions import tree_To_Newick
+from tree_helper_functions import get_Mergeable_from_tree
+from tree_helper_functions import get_Splitable_from_tree
+
 ## TYPE HINTING 
 from custom_types import Alias_dict
 from custom_types import Species_name
@@ -27,67 +33,6 @@ from custom_types import Imap_list
 
 
 ## SPECIALIZED HELPER FUNCTIONS
- 
-# takes a tree where only leaf nodes are named, and names all internal nodes
-
-    # The naming of internal nodes is accomplished by combining the names of 
-    # the descendant nodes. This is done from leaf to root. 
-
-def name_Internal_nodes (
-        tree:                   Tree
-                        ) ->    Tree:
-
-    for node in tree.traverse("postorder"):
-        if len(node.name) == 0:
-            newname = ""
-            for count, descendants in enumerate(node.iter_descendants("levelorder")):
-                if count == 0 or count == 1:
-                    newname += descendants.name
-            node.name = newname
-    
-    return tree
-
-# small wrapper function that returns an ete3 tree in a newick formatted string
-def tree_To_Newick  (
-        tree:               Tree
-                    ) ->    Tree_newick:
-
-    return tree.write(format=9)
-
-# returns a list of node pairs that are mergeable
-def get_Mergeable_from_tree (
-        tree:                       Tree, 
-        pops:                       Population_list
-                            ) ->    list[list[Species_name]]:
-
-    tree = copy.deepcopy(tree)
-    tree.prune(pops)
-
-    mergepairs = []
-    for node in tree.traverse("levelorder"):
-        if len(list(node.iter_descendants("levelorder"))) == 2:
-            pair = [leafnode.name for leafnode in node.iter_descendants("levelorder")]
-            mergepairs.append(pair)
-    
-    return mergepairs
-
-# returns the names of the node pairs that can be split
-def get_Splitable_from_tree (
-        tree:                       Tree, 
-        pops:                       Population_list
-                            ) ->    list[list[Species_name]]:
-
-    splitpairs = []
-    for node in tree.traverse("postorder"):
-        if node.name in pops and len(list(node.iter_descendants("levelorder"))) != 0:
-            pair = []
-            for count, descendants in enumerate(node.iter_descendants("levelorder")):
-                if count == 0 or count == 1:
-                    pair.append(descendants.name)
-            if set(pair).isdisjoint(pops):
-                splitpairs.append(pair)
-    
-    return splitpairs
 
 # remaps the leaf nodes of the tree to the most recent ancestor that is currently in the pop list
 def remap_from_tree (
