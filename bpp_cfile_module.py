@@ -83,10 +83,10 @@ def get_known_BPP_param (
         # find mode specific MCF trees if avilable
     if   BPP_mode == "A11":
         if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
-             BPP_cdict["newick"] = input_mc_dict["tree_start"]
+            BPP_cdict["newick"] = input_mc_dict["tree_start"]
     elif BPP_mode == "A00":
         if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
-             BPP_cdict["newick"] = input_mc_dict["tree_HM"]
+            BPP_cdict["newick"] = input_mc_dict["tree_HM"]
 
     # 3) if the master control dict specifies a custom control file for the appropriate stage
     stage_code = {"A01":'ctl_file_phylo', "A11":'ctl_file_delim',"A00":'ctl_file_HM'}
@@ -133,11 +133,9 @@ def get_user_BPP_param  (
     if   BPP_mode == "A11":
         if input_mc_dict["tree_start"] != "?": # harvest starting tree if available
             BPP_cdict["newick"] = input_mc_dict["tree_start"]
-            sourcedict["newick"] = "MCF"
     elif BPP_mode == "A00":
         if input_mc_dict["tree_HM"] != "?":    # harvest HM guide tree if available
             BPP_cdict["newick"] = input_mc_dict["tree_HM"]
-            sourcedict["newick"] = "MCF"
     # 0B) keep track of the origin of newly found parameters
     sourcedict = {param:(" - " if (BPP_cdict[param] == "?") else "MCF") for param in BPP_cdict }  
 
