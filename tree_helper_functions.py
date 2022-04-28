@@ -174,10 +174,35 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
     tau_dict = extract_Name_TauTheta_dict(BPP_outfile)[0]
     theta_dict = extract_Name_TauTheta_dict(BPP_outfile)[1]
 
+    # collect the decision parameters that are going to be visualized
+    gdi_dict = {}
+    age_dict = {}
+    for pair in MSC_param:
+        pairname = str(pair)[2:-2].split("', '")
+        merged_name = "".join(str(pair)[2:-2].split("', '"))
+        if MSC_param[pair]["gdi_1"] != "?":
+            gdi_dict[pairname[0]] = MSC_param[pair]["gdi_1"]
+        if MSC_param[pair]["gdi_2"] != "?":
+            gdi_dict[pairname[1]] = MSC_param[pair]["gdi_2"]
+        if MSC_param[pair]["age"] != "?":
+            age_dict[merged_name] = MSC_param[pair]["age"]
+
     # prepare the tree for visualization
     tree = Tree(proposed_tree)
     tree = name_Internal_nodes(tree)
-        
+
+    # put the data onto nodes
+    for i, node in enumerate(tree.traverse("preorder")):
+        name = node.name
+        if name in gdi_dict:
+            node.add_features(gdi=f" GDI={gdi_dict[name]}")
+        if name in tau_dict:
+            node.add_features(tauval=f" τ={tau_dict[name]}")
+        if name in theta_dict:
+            node.add_features(theta=f"θ={theta_dict[name]}")
+        if name in age_dict:
+            node.add_features(age=f" age={age_dict[name]}")
+
     # make the tree ultrametric
     for node in tree.traverse("levelorder"):
         if node.name in tau_dict:
@@ -231,25 +256,6 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
     for key in theta_dict:
         if theta_dict[key] < 1:
             theta_dict[key] = 1
-    
-
-    # collect the decision parameters that are going to be visualized
-    gdi_dict = {}
-    age_dict = {}
-    for pair in MSC_param:
-        pairname = str(pair)[2:-2].split("', '")
-        merged_name = "".join(str(pair)[2:-2].split("', '"))
-        if MSC_param[pair]["gdi_1"] != "?":
-            gdi_dict[pairname[0]] = MSC_param[pair]["gdi_1"]
-        if MSC_param[pair]["gdi_2"] != "?":
-            gdi_dict[pairname[1]] = MSC_param[pair]["gdi_2"]
-        if MSC_param[pair]["age"] != "?":
-            age_dict[merged_name] = MSC_param[pair]["age"]
-
-    for i, node in enumerate(tree.traverse("preorder")):
-        name = node.name
-        if name in gdi_dict:
-            node.add_features(gdi=f"GDI={gdi_dict[name]}")
 
     # get directory of left and right nodes, this is needed to place annotations correctly
     left_nodes = []
@@ -265,36 +271,44 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
         node.set_style(general_style)
 
     # style the tree to reflect the decision
-    edited_ancestors = []
-    for i, node in enumerate(tree.traverse("preorder")):
+    age_ancestors = []
+    tau_ancestors = []
+    
+    for node in tree.traverse("preorder"):
         name = node.name
-        if node.is_leaf() == True:
+        if node.is_leaf():
             
-            pos = "aligned"
-
+            # write in GDI value if available
             if name in gdi_dict:
                 face = AttrFace("gdi", fsize=10, fstyle="italic")
                 face.hz_align = 0
-                face.margin_right = 2
-                if name in left_nodes:
-                    face.vt_align = 2
-                    face.margin_top = 24
-                elif name in right_nodes:
-                    face.vt_align = 0
-                    face.margin_bottom = 24
-                node.add_face(face, column=1, position = pos)
+                node.add_face(face, column=1, position = "aligned")
 
+            ancestor = node.up
+            ancestorname = ancestor.name
+            # if a node is the ancestor to a leaf node pair
+            if len(list(ancestor.iter_descendants("levelorder"))) == 2:
+                # write in age in generations
+                if ancestorname in age_dict and ancestorname not in age_ancestors:
+                    ageface = AttrFace("age", fsize=10, fstyle="italic")
+                    ageface.margin_right = -10*(len(str(age_dict[ancestorname]))+5)
+                    ageface.vt_align = 1
+                    ancestor.add_face(ageface, column=2, position = "branch-bottom")
+                    age_ancestors.append(ancestorname)
+                # write in tau value
+                if ancestorname in tau_dict and ancestorname not in tau_ancestors:
+                    tauface = AttrFace("tauval", fsize=10)
+                    tauface.margin_right = -90
+                    tauface.vt_align = 1
+                    ancestor.add_face(tauface, column=2, position = "branch-top")
+                    tau_ancestors.append(ancestorname)
+
+            # edit branches and circle to accepted style
             if name in accepted_changes:
                 node.set_style(accepted_leaf)
                 ancestor = node.up
                 ancestor.set_style(accepted_node)
-                ancestorname = ancestor.name
-                if ancestorname in age_dict and ancestorname not in edited_ancestors:
-                    age = TextFace(f"age={age_dict[ancestorname]}", fsize=10)
-                    age.hz_align = 2
-                    ancestor.add_face(age, column=3, position = pos)
-                    edited_ancestors.append(ancestorname)
-                
+
                 if name in theta_dict:
                     nstyle = NodeStyle()
                     nstyle["hz_line_width"] = 4
@@ -308,21 +322,11 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
                     nstyle["size"] = theta_dict[name]
                     node.set_style(nstyle)
 
+            # edit branches and circle to rejected style
             elif name in rejected_changes:
                 node.set_style(rejected_leaf)
                 ancestor = node.up
-                ancestorname = ancestor.name
-                if ancestorname not in edited_ancestors:
-                    ancestor.set_style(rejected_node)
-                
-                    if ancestorname in age_dict:
-                        generations = age_dict[ancestorname]
-                        age = TextFace(f"age={generations}", fsize=10, fstyle="italic")
-                        age.hz_align = 2
-                        ancestor.add_face(age, column=3, position = pos)
-                
-                    edited_ancestors.append(ancestorname)
-                
+                ancestor.set_style(rejected_node)
                 if name in theta_dict:
                     nstyle = NodeStyle()
                     nstyle["hz_line_color"] = "Grey"
@@ -334,6 +338,7 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
                     nstyle["size"] = theta_dict[name]
                     node.set_style(nstyle)
             
+            # add in theta circle for remaining reaves
             elif name in theta_dict:
                 nstyle = NodeStyle()
                 nstyle["hz_line_width"] = 2
@@ -342,5 +347,10 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
                 nstyle["shape"] = "circle"
                 nstyle["size"] = theta_dict[name]
                 node.set_style(nstyle)
-
+            
+            # add in actual theta value
+            if name in theta_dict:
+                thetaface = AttrFace("theta", fsize=10)
+                node.add_face(thetaface, column=1, position = "branch-top")
+            
     tree.render("Decision_Visualization.png", tree_style=ts)
