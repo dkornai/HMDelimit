@@ -3,7 +3,7 @@ This repo holds the python source files for a multilocus species delimitation pi
 ### Methods:
 The pipeline performs multilocus species delimitation by combining the use of BPP, and a metric of speciation called the Genomic Divergence Index(GDI). Informed use of the pipeline requires that the user be familiar with the GDI, and how it relates to species delimitation.
 # Installation
-Use of the pipeline requires that BPP be installed on the user 
+Use of the pipeline requires that BPP be installed on the user's computer and added to "$PATH". Please check the BPP manual, available at "https://github.com/bpp/bpp" for specific installation directions. If BPP is installed, and the directory was cloned to the user's computer, navigate to the resulting directory in the terminal, and type "pip -r requirements.txt". After this, the pipeline will be able to run. 
 
 # Examples 
 ## A simple example:
@@ -55,7 +55,6 @@ The individual BPP stages can also be controlled through their own standard BPP 
 > Imapfile = imap.txt   
 >    
 > BPP A01 starting phylogeny inference control file = A01.ctl   
-> BPP A11 starting delimitation control file  = A11.ctl   
 > BPP A00 HM parameter inference control file = A00.ctl   
 >    
 > threads = 14 2 1   
