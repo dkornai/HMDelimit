@@ -1,5 +1,13 @@
+'''
+INSTALL ALL PYTHON DEPENDENCIES WITH: -r requirements.txt
+'''
+
 ### REQUIRED EXTERNAL DEPENDENCIES ###
-ete3
 numpy
 pandas
 biopython
+ete3
+# ete3 dependencies (not installed by pip)
+pyqt5
+lxml
+six
