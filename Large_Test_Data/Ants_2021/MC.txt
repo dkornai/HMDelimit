@@ -4,7 +4,7 @@ Imapfile = imap_short.txt
 BPP A01 starting phylogeny inference control file = A01.ctl
 BPP A00 HM parameter inference control file = A00.ctl
 
-threads = 18
+threads = 14
 burnin =   10000
 sampfreq = 1
 

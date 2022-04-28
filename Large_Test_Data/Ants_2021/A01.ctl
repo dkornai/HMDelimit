@@ -1,2 +1,2 @@
 
-nsample = 50000
+nsample = 100000
