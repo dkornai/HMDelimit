@@ -1,0 +1,16 @@
+seqfile = data.txt
+Imapfile = imap.txt
+
+HM guide tree = ((Europe,(Asia,America)),Africa);
+
+HM mode = merge
+HM mutation rate = 0.000000014 #taken from Scally & Durbin 2012 nature reviews genetics
+
+HM decision criteria = any
+
+tauprior = 3 0.03
+thetaprior = 3 0.0015 e
+threads = 18
+burnin =   10000
+nsample = 100000
+sampfreq = 1

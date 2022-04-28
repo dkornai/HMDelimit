@@ -1,0 +1,11 @@
+Imapfile = D_TMS_imap.txt
+seqfile = D_TMS_align.txt 
+
+HM guide tree = (((D,C),(B,A)),X);
+HM mode = split
+GDI threshold = 0.5
+HM decision criteria = one_gdi
+
+nsample = 10000
+threads = 12 2
+sampfreq = 2

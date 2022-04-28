@@ -17,14 +17,18 @@ def delimit_steps  (
     p_state,
                     ):
 
-    if   p_state == 3:
+    if   p_state == "A00":
         HierarchicalMethod(mc_file)
+
+    elif p_state == "A01+A00":
+        guide_tree = StartingTopolgy(mc_file)
+        HierarchicalMethod(mc_file, input_guide_tree = guide_tree)
         
-    elif p_state == 2:
+    elif p_state == "A11+A00":
         guide_tree, imap = StartingDelimitation(mc_file)
         HierarchicalMethod(mc_file, input_guide_tree = guide_tree, input_imap = imap)
     
-    elif p_state == 1:
+    elif p_state == "A01+A11+A00":
         tree = StartingTopolgy(mc_file)
         guide_tree, imap = StartingDelimitation(mc_file, starting_tree = tree)
         HierarchicalMethod(mc_file, input_guide_tree = guide_tree, input_imap = imap)
@@ -33,7 +37,7 @@ def HMpipeline(mc_file, checkonly):
     # check if any of the parameters in master control file are erroneously specified
     check_Master_Control(mc_file)
     
-    # check which trees are provided, and set the pipeline to begin the appropriate stage
+    # check which parameters are provided, and set the pipeline to begin the appropriate stage
     p_state = find_initial_State(mc_file)
     
     # check if the user supplied BPP control files relevant to the specific steps are correct

@@ -17,15 +17,15 @@ python3 HMDelimit.py Imapfile = Data_Sets/TMS_2019/D_TMS_align_mod.txt, seqfile=
 
 ## MCFILE BASED OPERATION
 # demonstration of MCF error checking
-python3 HMDelimit.py mcf = Test_Data/Test_BPP_Control/badMC.txt, --check
+python3 HMDelimit.py mcf = Large_Test_Data/Test_BPP_Control/badMC.txt, --check
 
 # demonstration of using the MCF with mutation rates
-python3 HMDelimit.py mcf = Data_Sets/Humans_2019/MC.txt,
+python3 HMDelimit.py mcf = Large_Test_Data/Humans_2019/MC.txt,
 
 # demonstration of using a BPP control file for the final stage
-python3 HMDelimit.py mcf = Data_Sets/Lizard_2010/D_L10_MC.txt, --check
-python3 HMDelimit.py mcf = Data_Sets/Lizard_2010/D_L10_MC.txt,
+python3 HMDelimit.py mcf = Large_Test_Data/Lizard_2010/D_L10_MC.txt, --check
+python3 HMDelimit.py mcf = Large_Test_Data/Lizard_2010/D_L10_MC.txt,
 
 # most complex demonstration
-python3 HMDelimit.py mcf = Data_Sets/Ants_2021/MC.txt, --check
-python3 HMDelimit.py mcf = Data_Sets/Ants_2021/MC.txt,
+python3 HMDelimit.py mcf = Large_Test_Data/Ants_2021/MC.txt, --check
+python3 HMDelimit.py mcf = Large_Test_Data/Ants_2021/MC.txt,

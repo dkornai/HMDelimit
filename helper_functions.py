@@ -42,6 +42,7 @@ from custom_types import Master_control_file
 from custom_types import Phylip_MSA_file
 from custom_types import Population_list
 from custom_types import HM_decision_parameters
+from custom_types import BPP_out_file
 
 ## CORE HELPER FUNCTIONS
 
@@ -163,19 +164,12 @@ def pretty  (
             ):
     
     longest_key_length = max(map(len, dict))
-    string_values = [str(dict[param]) for param in dict]
-
-    # add newline after each row if the length of the value is too large
-    longest_value_length = max(map(len, string_values))
-    rowend = ""
-    if longest_value_length > 120:
-        rowend = "\n"
     
     for key in dict:
         printkey = str(key)
         while len(printkey) < longest_key_length:
             printkey = printkey + " "
-        print(printkey,"=",dict[key],rowend)
+        print("  ", printkey,"=",dict[key])
     
     print()
 
@@ -516,3 +510,16 @@ def extract_Pops(
     except:
         print("[X] ERROR: POPULATIONS COULD NOT BE EXTRACTED FROM BPP RESULTS")
         exit() 
+
+# get a dict of node names:tau values and node names:theta values from the outfile
+def extract_Name_TauTheta_dict  (
+        BPP_outfile:                    BPP_out_file
+                                ) ->    tuple[dict[str, float], dict[str, float]]:
+
+    lines = readLines(BPP_outfile)
+    relevant_index = lines.index("List of nodes, taus and thetas:") # find the line where the node labels are listed
+    lines = lines[relevant_index+2:]
+    tau_dict = {line.split()[3]:float(line.split()[1]) for line in lines if float(line.split()[1]) != 0} #0 values excluded because they only occur when tau is not estimated
+    theta_dict = {line.split()[3]:float(line.split()[2]) for line in lines if float(line.split()[2]) != -1} #-1 values excluded because they only occur when theta is not estimated (one seq for the population)
+
+    return tau_dict, theta_dict

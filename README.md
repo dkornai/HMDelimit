@@ -1,7 +1,11 @@
 # HMDelimit
 This repo holds the python source files for a multilocus species delimitation pipeline.
 ### Methods:
-The pipeline performs multilocus species delimitation by combining the use of BPP, and a metric of speciation called the Genomic Divergence Index(GDI). Informed use of the pipeline requires that the user be familiar with the GDI, and how it relates to species delimitation. 
+The pipeline performs multilocus species delimitation by combining the use of BPP, and a metric of speciation called the Genomic Divergence Index(GDI). Informed use of the pipeline requires that the user be familiar with the GDI, and how it relates to species delimitation.
+# Installation
+Use of the pipeline requires that BPP be installed on the user 
+
+# Examples 
 ## A simple example:
 The pipeline is extremely simple to operate. A completely automated delimitation workflow can be initated by typing: 
 
@@ -10,8 +14,7 @@ The pipeline is extremely simple to operate. A completely automated delimitation
 In this case, the pipeline will:
 
 1. Infer a starting phylogeny based on the multiple sequence alignment and Imap file using BPP A01
-2. Infer a starting delimitation, and corresponding guide tree using BPP A11
-3. Iteratively refine the starting delimitation using the GDI and BPP A00
+2. Iteratively refine the starting delimitation using the GDI and BPP A00
 
 The output of the pipeline will be:
 

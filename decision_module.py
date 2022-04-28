@@ -12,8 +12,11 @@ import numpy as np
 
 # HELPER FUNCTION DEPENDENCIES
 from helper_functions import flatten
-from helper_functions import readLines
+from helper_functions import extract_Name_TauTheta_dict
 from helper_functions import pretty_Table
+
+# TREE FUNCTION DEPENDENCIES
+from tree_helper_functions import visualize_decision
 
 ## DATA DEPENDENCIES
 from data_dicts import HM_decision_criteria_description
@@ -21,25 +24,13 @@ from data_dicts import HM_decision_criteria_description
 ## TYPE HINTING DEPENDENCIES
 from custom_types import BPP_out_file
 from custom_types import HM_decision_parameters
-from custom_types import Demographic_parameters
+from custom_types import MSC_parameters
 from custom_types import Species_name
 from custom_types import Population_list
 from custom_types import HM_criteria_matched
-
+from custom_types import Tree_newick
 
 ## SPECEIALIZED HELPER FUNCTIONS
-# get a dict of node names:tau values and node names:theta values from the outfile
-def get_Name_TauTheta_dict  (
-    BPP_outfile:                    BPP_out_file
-                            ) ->    tuple[dict[str, float], dict[str, float]]:
-
-    lines = readLines(BPP_outfile)
-    relevant_index = lines.index("List of nodes, taus and thetas:") # find the line where the node labels are listed
-    lines = lines[relevant_index+2:]
-    tau_dict = {line.split()[3]:float(line.split()[1]) for line in lines if float(line.split()[1]) != 0} #0 values excluded because they only occur when tau is not estimated
-    theta_dict = {line.split()[3]:float(line.split()[2]) for line in lines if float(line.split()[2]) != -1} #-1 values excluded because they only occur when theta is not estimated (one seq for the population)
-
-    return tau_dict, theta_dict
 
 # calculate the two gdi values for a given pair of species
 '''
@@ -103,7 +94,7 @@ def calculate_tau   (
         tau_key_2 = f"{species_2}{species_1}"
         tau = Name_TauTheta_dict[0][tau_key_2]
     
-    return tau 
+    return float(np.round(tau, decimals = 6)) 
 
 # calculate the # of generations since the s1 and s2 split from their common ancestor using TAU & subsitutions/site/generation
 def age_Of_Pairs(
@@ -124,14 +115,14 @@ def age_Of_Pairs(
 
 ## FUNCTIONS IMPLEMENTING THE STEPS OF THE DECISION PROCESS
 
-# extract the parameters (GDI, split age in generations) relevant to the merge decision from the simulation results
-def get_demographic_param   (
-        BPP_outfile:                BPP_out_file, 
-        proposed_changes:           list[list[Species_name]], 
-        hm_param:                   HM_decision_parameters,
-                            ) ->    Demographic_parameters:
+# extract the parameters inferrable form the MultispeciesCoalescent model (GDI, split age in generations) relevant to the merge decision.
+def get_MSC_param   (
+        BPP_outfile:        BPP_out_file, 
+        proposed_changes:   list[list[Species_name]], 
+        hm_param:           HM_decision_parameters,
+                    ) ->    MSC_parameters:
 
-    name_tautheta_dict = get_Name_TauTheta_dict(BPP_outfile)
+    name_tautheta_dict = extract_Name_TauTheta_dict(BPP_outfile)
     # create empty dict to hold results
     param_dict = {str(pair):{"gdi_1": "?", "gdi_2": "?", "age": "?"} for pair in proposed_changes}
     
@@ -151,22 +142,22 @@ def get_demographic_param   (
 
 # based on the calculated model paramteres, and the criteria described in the master control file, decide which parameters match the required values
 def criteria_matcher(
-        demographic_param:  Demographic_parameters, 
+        MSC_param:          MSC_parameters, 
         hm_param:           HM_decision_parameters
                     ) ->    HM_criteria_matched:
 
     # create empty result dict
-    match_dict = {str(pair):{"gdi_1": "?", "gdi_2": "?", "age": "?"} for pair in demographic_param}
+    match_dict = {str(pair):{"gdi_1": "?", "gdi_2": "?", "age": "?"} for pair in MSC_param}
 
     age_thresh = hm_param["generations"]
     GDI_thresh = hm_param["GDI_thresh"]
 
     # iterate through all the possible pairs and decide which criteria they match
-    for pair in demographic_param.keys():
+    for pair in MSC_param.keys():
         # seperate the variables out for shorter conditional checks
-        gdi_1 = demographic_param[pair]["gdi_1"]
-        gdi_2 = demographic_param[pair]["gdi_2"]
-        age   = demographic_param[pair]["age"]
+        gdi_1 = MSC_param[pair]["gdi_1"]
+        gdi_2 = MSC_param[pair]["gdi_2"]
+        age   = MSC_param[pair]["age"]
     
         # if gdi values are available, decide if the gdi value is above or below the threshold 
         if gdi_1 != "?" and gdi_2 != "?":
@@ -259,7 +250,7 @@ def make_decision   (
 # prints feedback to the user about the decision criteria
 def decisionUserFeedback(
         proposed_changes:       list[list[Species_name]],
-        demographic_parameters: Demographic_parameters, 
+        MSC_param:              MSC_parameters, 
         hm_param:               HM_decision_parameters, 
         matched_dict:           HM_criteria_matched,   
         decision:               list[list[Species_name]]
@@ -282,7 +273,7 @@ def decisionUserFeedback(
     print(f"\n2) The decision criteria is: {hm_param['HM_decision'].upper()}")
     print(f"\n  {mode.lower()} proposals are accepted {HM_decision_criteria_description[hm_param['HM_decision']]}")
     
-    # gather the decision demographic_parameters and results into list of lists
+    # gather the decision MSC_param and results into list of lists
         
         # names of the population pairs that are proposed to change
     name_list = []
@@ -299,9 +290,9 @@ def decisionUserFeedback(
         gdi_2_acc_list = []
 
         for proposal in proposed_changes:
-            gdi_1_list.append(str(demographic_parameters[str(proposal)]["gdi_1"]))
+            gdi_1_list.append(str(MSC_param[str(proposal)]["gdi_1"]))
             gdi_1_acc_list.append(str(matched_dict[str(proposal)]["gdi_1"]))
-            gdi_2_list.append(str(demographic_parameters[str(proposal)]["gdi_2"]))
+            gdi_2_list.append(str(MSC_param[str(proposal)]["gdi_2"]))
             gdi_2_acc_list.append(str(matched_dict[str(proposal)]["gdi_2"]))
 
         results_table.extend([gdi_1_list, gdi_1_acc_list , gdi_2_list, gdi_2_acc_list])
@@ -313,7 +304,7 @@ def decisionUserFeedback(
         age_acc_list = []
 
         for proposal in proposed_changes:
-            age_list.append(str(demographic_parameters[str(proposal)]["age"]))
+            age_list.append(str(MSC_param[str(proposal)]["age"]))
             age_acc_list.append(str(matched_dict[str(proposal)]["age"]))
         
         results_table.extend([age_list, age_acc_list])
@@ -409,7 +400,8 @@ def stop_check  (
 
 # wrapper function that implements the complete decision procedure
 def decisionModule  (
-        hm_param:           HM_decision_parameters, 
+        hm_param:           HM_decision_parameters,
+        tree_proposed:      Tree_newick, 
         BPP_outfile:        BPP_out_file, 
         proposed_changes:   list[list[Species_name]], 
         accepted_pops:      Population_list, 
@@ -419,19 +411,22 @@ def decisionModule  (
     print("MAKING DECISIONS BASED ON BPP MODEL RESULTS")
 
     # extract the parameter values relevant to the decision
-    demog_param = get_demographic_param(BPP_outfile, proposed_changes, hm_param)
+    MSC_param = get_MSC_param(BPP_outfile, proposed_changes, hm_param)
     
     # check if the parameter values are within the thresholds required to accept a decision
-    match_dict = criteria_matcher(demog_param, hm_param)
+    match_dict = criteria_matcher(MSC_param, hm_param)
     
     # get the final list of population pairs that match the necessary criteria to accept
     decision = make_decision(match_dict, hm_param)
 
     # print feedback to the user about the decision process
-    decisionUserFeedback(proposed_changes, demog_param, hm_param, match_dict, decision)
+    decisionUserFeedback(proposed_changes, MSC_param, hm_param, match_dict, decision)
 
     # implement the changes to the list of accepted popuations
     new_accepted_pops = implement_decision(accepted_pops, decision, hm_param)
+
+    # write the feedback tree 
+    visualize_decision(tree_proposed, MSC_param, BPP_outfile, proposed_changes, decision)
 
     # keep track of whether the program has finished 
     to_iterate = stop_check(hm_param, decision, new_accepted_pops, halt_pop_number)

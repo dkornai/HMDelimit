@@ -195,7 +195,7 @@ def create_auto_MC  (
 
     filename = "AutoMC.txt"
 
-    print(f"\nAUTOMATICALLY GENERATING MASTER CONTROL FILE '{filename}' BASED ON USER INPUT\n")
+    print(f"\nAUTOMATICALLY GENERATING MASTER CONTROL FILE '{filename}' BASED ON USER INPUT")
 
     # check that such a file exists already, and fail the pipeline if so
     file_exists = check_File_exists(filename)

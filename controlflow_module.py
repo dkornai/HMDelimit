@@ -10,8 +10,8 @@ from check_helper_functions import check_BPP_ctl_validity
 
 # CHECK PARAM MODULE
 from check_param_module import check_BPP_param
-from check_param_module import check_A01_to_A11_compatibility
-from check_param_module import check_A11_to_A00_compatibility
+from check_param_module import check_A11_input_compat
+from check_param_module import check_A00_input_compat
 
 # HELPER FUNCTIONS
 from helper_functions import read_MasterControl
@@ -41,7 +41,7 @@ def get_Tree(
 
     return trees
 
-# scan the tree presence dict to decide which state the program will start from
+# scan the master control file and BPP control file to determine which stages to execute
 def find_initial_State  (
         input_mc_file:          Master_control_file
                         ):
@@ -51,57 +51,87 @@ def find_initial_State  (
     mc_dict = read_MasterControl(input_mc_file)
     tree_state = get_Tree(mc_dict)
     
-    # program states are entered in this order, depending on whether a tree for a given stage was specified
-        # if a guide tree for the HM stage is specified in the MCF, skip all stages before HM
-    if tree_state["tree_HM"] != "?":
-        p_state = 3
-        print(f"HM guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_HM']}")
-        # if a starting tree for A11 is specified in the MCF, skip all other stages before
-    elif tree_state["tree_start"] != "?":
-        p_state = 2
-        print(f"Starting Delimitation guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_start']}")
-        # if a guide tree for the HM stage is specified in it's control file, and no trees are in the MCF
-    elif tree_state["tree_BPPA00"] != "?":
-        p_state = 3
+    ## DECIDE WHICH STATE TO ENTER INTO, DEPENDING ON THE PARAMETERS THAT WERE PROVIDED
+
+    # if a guide tree for the HM stage is specified in it's control file, skip all stages before HM
+    if tree_state["tree_BPPA00"] != "?":
+        p_state = "A00"
         print(f"HM guide tree identified in the BPP control file: {mc_dict['ctl_file_HM']}\n\n\tTree: {tree_state['tree_BPPA00']}")
-        # if a tree for the SD stage is specified in it's control file, and no trees are in the MCF
+    
+    # if a guide tree for the HM stage is specified in the MCF, skip all stages before HM
+    elif tree_state["tree_HM"] != "?":
+        p_state = "A00"
+        print(f"HM guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_HM']}")
+
+    # if a tree for the SD stage is specified in a seperate control file
     elif tree_state["tree_BPPA11"] != "?":
-        p_state = 2
-        print(f"Starting delimitation guide tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA11']}")
-        # if a guide tree for the starting topolgy inference stage is specified in it's control file, and no trees are in the MCF
-    elif tree_state["tree_BPPA01"] != "?":
-        p_state = 1
+        p_state = "A11+A00"
+        print(f"BPP A11 guide tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA11']}")
+    # if a starting tree for A11 is specified in the MCF
+    elif tree_state["tree_start"] != "?":
+        p_state = "A11+A00"
+        print(f"BPP A11 guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_start']}")
+
+    # if a guide tree for the starting topolgy inference stage is specified the control file, and the A11 option is True
+    elif tree_state["tree_BPPA01"] != "?" and mc_dict["execute_A11"] == "True":
+        p_state = "A01+A11+A00"
         print(f"Starting Topology inference helper tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA01']}")
-        # if no tree is found
+        print("Execute A11 option set to 'True' in Master Control File")
+
+    # if a guide tree for the starting topolgy inference stage is specified the control file, and an A11 control file is specified
+    elif tree_state["tree_BPPA01"] != "?" and mc_dict["ctl_file_delim"] != "?":
+        p_state = "A01+A11+A00"
+        print(f"Starting Topology inference helper tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA01']}")
+        print(f"BPP A11 control file specified in Master Control File: {mc_dict['ctl_file_delim']}")
+    
+    # if a guide tree for the starting topolgy inference stage is specified the control file,
+    elif tree_state["tree_BPPA01"] != "?":
+        p_state = "A01+A00"
+        print(f"Starting Topology inference helper tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA01']}")
+
+    # if no tree is found, but the user wants the A11 step as indicated by the execute_A11 option
+    elif mc_dict["execute_A11"] == "True":
+        p_state = "A01+A11+A00"
+        print("No trees found in the Master Control File, or associated BPP control file")
+        print("The execute A11 option is set to 'True'.")
+
+    # if no tree is found, but the user wants the A11 step as indicated by a specified control file
+    elif mc_dict["ctl_file_delim"] != "?":
+        p_state = "A01+A11+A00"
+        print("No trees found in the Master Control File, or associated BPP control file")
+        print(f"BPP A11 control file specified in Master Control File: {mc_dict['ctl_file_delim']}")
+    
+    # if no tree is found
     else:
-        p_state = 1
+        p_state = "A01+A00"
         print("No trees found in the Master Control File, or associated BPP control files.")
 
+    ## PROVIDE USER FEEDBACK
     print("\nAccordingly, the program will:\n")
-
-    # print user feedback about what the program is going to do
-    stage_1_desc = "Use BPP A01 to infer a starting phylogenetic tree\n"
-    stage_2_desc = "Use BPP A11 to infer a starting delimitation and an associated guide tree\n"
-    stage_3_desc = "Use BPP A00 and the the Hierarchical Method to find the optimal species delimitation\n   given the starting delimitation and the guide tree\n"
+    if p_state == "A00":
+        print("1) Use BPP A00 and the the Hierarchical Method to find the optimal species delimitation\ngiven the guide tree and imap provided by the user")
     
-    if p_state == 1:
-        print("1)", stage_1_desc)
-        print("2)", stage_2_desc)
-        print("3)", stage_3_desc)
+    if p_state == "A01+A00":
+        print("1) Use BPP A01 to infer a species phylogeny from imap and seqfile")
+        print("2) Use BPP A00 and the the Hierarchical Method to find the optimal species delimitation\ngiven the guide tree produced in the previous A01 stage")
 
-    if p_state == 2:
-        print("1)", stage_2_desc)
-        print("2)", stage_3_desc)
+    if p_state == "A11+A00":
+        print("1) Use BPP A11 to infer a species delimitation from the starting tree and imap provided by the user")
+        print("2) Use BPP A00 and the the Hierarchical Method to further refine the delimitation produced by the previous A11 stage")
     
-    if p_state == 3:
-        print("1)", stage_3_desc)
+    if p_state == "A01+A11+A00":
+        print("1) Use BPP A01 to infer a species phylogeny from imap and seqfile")
+        print("1) Use BPP A11 to infer a species delimitation given the starting tree produced in the previous A01 stage")
+        print("3) Use BPP A00 and the the Hierarchical Method to further refine the delimitation produced by the previous A11 stage")
+
+    print()
 
     return p_state
 
 # check if the BPP control files that are supplied by the user, and relevant to the execution only contain valid paramters
 def controlled_BPP_cfile_check  (
         input_mc_file:                  Master_control_file, 
-        p_state:                        int
+        p_state:                        str
                                 ):
 
     mc_dict = read_MasterControl(input_mc_file)
@@ -113,7 +143,7 @@ def controlled_BPP_cfile_check  (
     ## P STATE DEPENDENT CHECKING
     all_compatible = []
         
-    if   p_state == 3:
+    if   p_state == "A00":
         if A00_ctl != "?":
             print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}")
         
@@ -124,7 +154,24 @@ def controlled_BPP_cfile_check  (
             else:
                 all_compatible.append(False)
 
-    elif p_state == 2:
+    elif p_state == "A01+A00":
+        if A11_ctl != "?" or A00_ctl != "?":
+            print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}")
+        
+        if A01_ctl != "?":
+            print(f"\n\tCHECKING SUPPLIED A11 CONTROL FILE: {A01_ctl}")
+            if check_BPP_ctl_validity(A01_ctl):
+                all_compatible.append(True)
+            else:
+                all_compatible.append(False)
+        if A00_ctl != "?":
+            print(f"\n\tCHECKING SUPPLIED A00 CONTROL FILE: {A00_ctl}")
+            if check_BPP_ctl_validity(A00_ctl):
+                all_compatible.append(True)
+            else:
+                all_compatible.append(False)
+
+    elif p_state == "A11+A00":
         if A11_ctl != "?" or A00_ctl != "?":
             print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}")
         
@@ -141,7 +188,7 @@ def controlled_BPP_cfile_check  (
             else:
                 all_compatible.append(False)
         
-    elif p_state == 1:
+    elif p_state == "A01+A11+A00":
         if A11_ctl != "?" or A00_ctl != "?" or  A01_ctl != "?":
             print(f"{clprnt.BLUE}INITAL CHECK OF USER SUPPLIED BPP CONTROL FILES{clprnt.end}")
         
@@ -182,30 +229,40 @@ def controlled_BPP_parameter_check  (
     mc_dict = read_MasterControl(input_mc_file)
     compatible = False
 
-    if   p_state == 3:
+    ## PERFORM MODE DEPENDENT CHECKS
+    if   p_state == "A00":
         A00_param, A00_source = get_user_BPP_param(mc_dict, "A00")
         
         if check_BPP_param(A00_param, A00_source, "A00"):
             compatible = True
 
-    elif p_state == 2:
+    elif p_state == "A01+A00":
+        A01_param, A01_source = get_user_BPP_param(mc_dict, "A01")
+        A00_param, A00_source = get_user_BPP_param(mc_dict, "A00")
+        
+        if check_BPP_param(A01_param, A01_source, "A01"):
+            if check_A00_input_compat(A01_param, A00_param):
+                if check_BPP_param(A00_param, A00_source, "A00"):
+                    compatible = True
+
+    elif p_state == "A11+A00":
         A11_param, A11_source = get_user_BPP_param(mc_dict, "A11")
         A00_param, A00_source = get_user_BPP_param(mc_dict, "A00", after_A11 = True)
         
         if check_BPP_param(A11_param, A11_source, "A11"):
-            if check_A11_to_A00_compatibility(A11_param, A00_param):
+            if check_A00_input_compat(A11_param, A00_param):
                 if check_BPP_param(A00_param, A00_source, "A00", after_A11 = True):
                     compatible = True
 
-    elif p_state == 1:
+    elif p_state == "A01+A11+A00":
         A01_param, A01_source = get_user_BPP_param(mc_dict, "A01")
         A11_param, A11_source = get_user_BPP_param(mc_dict, "A11")
         A00_param, A00_source = get_user_BPP_param(mc_dict, "A00", after_A11 = True)
         
         if check_BPP_param(A01_param, A01_source, "A01"):
-            if check_A01_to_A11_compatibility(A01_param, A11_param):
+            if check_A11_input_compat(A01_param, A11_param):
                 if check_BPP_param(A11_param, A11_source, "A11"):
-                    if check_A11_to_A00_compatibility(A11_param, A00_param):
+                    if check_A00_input_compat(A11_param, A00_param):
                         if check_BPP_param(A00_param, A00_source, "A00", after_A11 = True):
                             compatible = True
 

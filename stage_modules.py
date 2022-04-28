@@ -82,8 +82,9 @@ def StartingTopolgy (
     dict_to_bppcfile(BPP_cdict, os.path.join(target_dir, BPP_A01_cfile_name))
     shutil.copy(src = BPP_cdict['seqfile'],  dst = target_dir)
     shutil.copy(src = BPP_cdict['Imapfile'], dst = target_dir)
-
-
+    
+        # STARTING PHYLOGENY #
+    ###############################
     #-----------------------------#
     os.chdir(target_dir)
     
@@ -140,7 +141,7 @@ def StartingDelimitation(
     list_To_Imap(imap_unique_ids, os.path.join(target_dir, imap_unique_ids_name))
     shutil.copy(src = BPP_cdict['seqfile'],  dst = target_dir)
 
-        # STARTING PHYLOGENY #
+       # STARTING DELIMITATION #
     ###############################
     #-----------------------------#
     os.chdir(target_dir)
@@ -215,7 +216,7 @@ def HMIteration (
     shutil.copy(src = BPP_cdict['seqfile'], dst = target_dir)
     dict_to_bppcfile(BPP_cdict, os.path.join(target_dir, proposed_cfile_name))
 
-       # STARTING DELIMITATION #
+           # HM ITERATION #
     ###############################
     #-----------------------------#
     os.chdir(target_dir)
@@ -225,6 +226,7 @@ def HMIteration (
     
     # make decision about which proposals to accept based on BPP results and HM decision criteria
     accepted, to_iterate = decisionModule(hm_param         = hm_param,
+                                          tree_proposed    = prop_tree,
                                           BPP_outfile      = os.path.join(BPP_cdict["outfile"]),
                                           proposed_changes = prop_change,
                                           accepted_pops    = input_accepted_pops,

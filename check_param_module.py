@@ -81,6 +81,7 @@ def check_Master_Control(
     par_check["Imapfile"]       = check_Imap_filetype(param["Imapfile"])
     par_check["tree_start"]     = check_Newick(param["tree_start"])
     par_check["tree_HM"]        = check_Newick(param["tree_HM"])
+    par_check["execute_A11"]    = check_ValueIsFrom(param["execute_A11"], ["True"])
     par_check["ctl_file_phylo"] = check_BPP_ctl_filetype(param["ctl_file_phylo"])
     par_check["ctl_file_delim"] = check_BPP_ctl_filetype(param["ctl_file_delim"])
     par_check["ctl_file_HM"]    = check_BPP_ctl_filetype(param["ctl_file_HM"])
@@ -144,7 +145,7 @@ def check_BPP_param (
         after_A11:          bool = False,   # when this parameter is on, the lack of seq and imap files is not interpreted as an error
                     ) ->    bool:
 
-    mode_desc = {"A01":"starting phylogeny inference", "A11": "starting delimitation inference", "A00":"hierarchical method"}
+    mode_desc = {"A01":"starting phylogeny inference", "A11": "starting delimitation inference", "A00":"the hierarchical method"}
     print(f"{clprnt.BLUE}\nCHECKING USER SUPPLIED BPP {BPP_mode} PARAMETERS USED DURING {mode_desc[BPP_mode].upper()}{clprnt.end}\n")
 
     # prepare empty checking dict, the popsizes row is ignored because that is only an internal row of the pipeline
@@ -247,7 +248,7 @@ with the following A11 stage. This can only be the case, if the Imap file for th
 In this case, all of the species named in the tree will be present in the A11 imap as well, and 
 the A11 stage can proceed accordingly.
 '''
-def check_A01_to_A11_compatibility  (
+def check_A11_input_compat  (
         A01_parameters:                     BPP_control_dict, 
         A11_parameters:                     BPP_control_dict,
                                     ) ->    bool:
@@ -278,12 +279,12 @@ As such, A11 stage output can be passed to teh A00 stage if the seqfile for
 the two stages only references identical individuals. That way, the seqfile, Imap, and
 tree for the A00 stage will also be compatible. 
 '''
-def check_A11_to_A00_compatibility  (
+def check_A00_input_compat  (
         A11_parameters:                     BPP_control_dict, 
         A00_parameters:                     BPP_control_dict
                                     ) ->    bool:
 
-    print(f"\n{clprnt.BLUE}CHECKING IF A11 PARAMETERS AND OUTPUT WILL BE COMPATIBLE WITH THE A00 STAGE{clprnt.end}\n")
+    print(f"\n{clprnt.BLUE}CHECKING IF THE OUTPUT OF THE PREVIOUS STAGE WILL BE COMPATIBLE WITH THE A00 STAGE{clprnt.end}\n")
 
     A11_msa_checked = check_MSA_filetype(A11_parameters["seqfile"])
     if A11_msa_checked < 1:
@@ -298,10 +299,10 @@ def check_A11_to_A00_compatibility  (
         # the two stages can be compatible if the MSA files are identical
         if A11_parameters["seqfile"] == A00_parameters["seqfile"]:
             compatible = True
-            print("[*] The seqfile for the A11 and A00 stages is identical, compatibility is guaranteed!")
+            print("[*] The seqfile for the previous and A00 stages is identical, compatibility is guaranteed!")
         elif assert_Imap_Seq_compat(A11_parameters["Imapfile"], A00_parameters["alignmentfile"]):
             compatible = True
-            print("[*] The seqfile for the A11 and A00 stages is different, but they reference the same individuals, so comaptibility is guaranteed!")
+            print("[*] The seqfile for the previous and A00 stages is different, but they reference the same individuals, so comaptibility is guaranteed!")
         else:
             compatible = False
 

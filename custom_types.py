@@ -47,5 +47,5 @@ Species_name = NewType("Species_name", str)
 
 # custom types for the decision module
 HM_decision_parameters = NewType("HM_decision_parameters", dict)
-Demographic_parameters = NewType("Demographic_parameters", dict)
+MSC_parameters = NewType("MSC_parameters", dict)
 HM_criteria_matched = NewType("HM_criteria_matched", dict)
