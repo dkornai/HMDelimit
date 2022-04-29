@@ -16,6 +16,8 @@ with warnings.catch_warnings():
     from ete3 import TextFace
     from ete3 import AttrFace
 
+import distinctipy
+
 # HELPER DEPENDENCIES
 from helper_functions import flatten
 from helper_functions import extract_Name_TauTheta_dict
@@ -156,6 +158,27 @@ ts.margin_right = 10
 ts.margin_top = 10
 ts.scale = 100
 
+# make a tree with available distance values ultrametric, and scale the size to be easy to display
+def make_ultrametric(tree):
+   
+    multiplier = (1/(tree.get_farthest_node()[1]))
+    for node in tree.iter_descendants("postorder"):
+        node.dist = node.dist*multiplier*10
+
+    for node in tree.traverse("postorder"):
+        descendants = list(node.iter_descendants("levelorder"))
+        if len(descendants) > 2:
+            node_1 = descendants[0]
+            maxdist_1 = node_1.get_farthest_leaf()[1]
+            node_2 = descendants[1]
+            maxdist_2 = node_2.get_farthest_leaf()[1]
+            if maxdist_1 > maxdist_2:
+                node_2.dist = node_2.dist + (maxdist_1-maxdist_2)
+            elif maxdist_2 > maxdist_1:
+                node_1.dist = node_1.dist + (maxdist_2-maxdist_1)
+
+    return tree
+
 # main function implementing the drawing of the feedback tree
 def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, decision):
     
@@ -197,34 +220,18 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
         if name in gdi_dict:
             node.add_features(gdi=f" GDI={gdi_dict[name]}")
         if name in tau_dict:
-            node.add_features(tauval=f" τ={tau_dict[name]}")
+            node.add_features(tauval=f" 𝞽={tau_dict[name]}")
         if name in theta_dict:
             node.add_features(theta=f"θ={theta_dict[name]}")
         if name in age_dict:
             node.add_features(age=f" age={age_dict[name]}")
 
-    # make the tree ultrametric
     for node in tree.iter_descendants("levelorder"):
         ancestor = node.up
         if ancestor.name in tau_dict:
             node.dist = tau_dict[ancestor.name]
     
-    multiplier = (1/(tree.get_farthest_node()[1]))
-    for node in tree.iter_descendants("postorder"):
-        node.dist = node.dist*multiplier*10
-
-    for node in tree.traverse("postorder"):
-        descendants = list(node.iter_descendants("levelorder"))
-        if len(descendants) > 2:
-            node_1 = descendants[0]
-            maxdist_1 = node_1.get_farthest_leaf()[1]
-            node_2 = descendants[1]
-            maxdist_2 = node_2.get_farthest_leaf()[1]
-            if maxdist_1 > maxdist_2:
-                node_2.dist = node_2.dist + (maxdist_1-maxdist_2)
-            elif maxdist_2 > maxdist_1:
-                node_1.dist = node_1.dist + (maxdist_2-maxdist_1)
-
+    tree = make_ultrametric(tree)
     # scale theta for visualization purposes
     leaf_names = [node.name for node in tree.traverse() if node.is_leaf()]
     max_leaf_theta = 0
@@ -256,83 +263,150 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
     age_ancestors = []
     tau_ancestors = []
     
-    for node in tree.traverse("preorder"):
+    for node in tree.iter_leaves():
         name = node.name
-        if node.is_leaf():
-            
-            # write in GDI value if available
-            if name in gdi_dict:
-                face = AttrFace("gdi", fsize=10, fstyle="bold")
-                face.hz_align = 0
-                node.add_face(face, column=1, position = "aligned")
+ 
+        # write in GDI value if available
+        if name in gdi_dict:
+            face = AttrFace("gdi", fsize=10, fstyle="bold")
+            face.hz_align = 0
+            node.add_face(face, column=1, position = "aligned")
 
+        ancestor = node.up
+        ancestorname = ancestor.name
+        # if a node is the ancestor to a leaf node pair
+        if len(list(ancestor.iter_descendants("levelorder"))) == 2:
+            # write in age in generations
+            if ancestorname in age_dict and ancestorname not in age_ancestors:
+                ageface = AttrFace("age", fsize=10, fstyle="italic")
+                ageface.margin_right = -10*(len(str(age_dict[ancestorname]))+5)
+                ageface.vt_align = 1
+                ancestor.add_face(ageface, column=2, position = "branch-bottom")
+                age_ancestors.append(ancestorname)
+            # write in tau value
+            if ancestorname in tau_dict and ancestorname not in tau_ancestors:
+                tauface = AttrFace("tauval", fsize=10)
+                tauface.margin_right = -90
+                tauface.vt_align = 1
+                ancestor.add_face(tauface, column=2, position = "branch-top")
+                tau_ancestors.append(ancestorname)
+
+        # edit branches and circle to accepted style
+        if name in accepted_changes:
+            node.set_style(accepted_leaf)
             ancestor = node.up
-            ancestorname = ancestor.name
-            # if a node is the ancestor to a leaf node pair
-            if len(list(ancestor.iter_descendants("levelorder"))) == 2:
-                # write in age in generations
-                if ancestorname in age_dict and ancestorname not in age_ancestors:
-                    ageface = AttrFace("age", fsize=10, fstyle="italic")
-                    ageface.margin_right = -10*(len(str(age_dict[ancestorname]))+5)
-                    ageface.vt_align = 1
-                    ancestor.add_face(ageface, column=2, position = "branch-bottom")
-                    age_ancestors.append(ancestorname)
-                # write in tau value
-                if ancestorname in tau_dict and ancestorname not in tau_ancestors:
-                    tauface = AttrFace("tauval", fsize=10)
-                    tauface.margin_right = -90
-                    tauface.vt_align = 1
-                    ancestor.add_face(tauface, column=2, position = "branch-top")
-                    tau_ancestors.append(ancestorname)
+            ancestor.set_style(accepted_node)
 
-            # edit branches and circle to accepted style
-            if name in accepted_changes:
-                node.set_style(accepted_leaf)
-                ancestor = node.up
-                ancestor.set_style(accepted_node)
-
-                if name in theta_dict:
-                    nstyle = NodeStyle()
-                    nstyle["hz_line_width"] = 6
-                    nstyle["hz_line_color"] = "LimeGreen"
-                    nstyle["vt_line_color"] = "LimeGreen"
-                    nstyle["vt_line_width"] = 6
-                    nstyle["vt_line_type"] = 1
-                    nstyle["hz_line_type"] = 1
-                    nstyle["fgcolor"] = "LimeGreen"
-                    nstyle["shape"] = "sphere"
-                    nstyle["size"] = theta_dict[name]
-                    node.set_style(nstyle)
-
-            # edit branches and circle to rejected style
-            elif name in rejected_changes:
-                node.set_style(rejected_leaf)
-                ancestor = node.up
-                ancestor.set_style(rejected_node)
-                if name in theta_dict:
-                    nstyle = NodeStyle()
-                    nstyle["hz_line_color"] = "Grey"
-                    nstyle["hz_line_width"] = 6
-                    nstyle["hz_line_type"] = 0
-                    nstyle["vt_line_width"] = 2
-                    nstyle["fgcolor"] = "Grey"
-                    nstyle["shape"] = "sphere"
-                    nstyle["size"] = theta_dict[name]
-                    node.set_style(nstyle)
-            
-            # add in theta circle for remaining reaves
-            elif name in theta_dict:
+            if name in theta_dict:
                 nstyle = NodeStyle()
-                nstyle["hz_line_width"] = 2
-                nstyle["vt_line_width"] = 2
-                nstyle["fgcolor"] = "Gainsboro"
-                nstyle["shape"] = "circle"
+                nstyle["hz_line_width"] = 6
+                nstyle["hz_line_color"] = "LimeGreen"
+                nstyle["vt_line_color"] = "LimeGreen"
+                nstyle["vt_line_width"] = 6
+                nstyle["vt_line_type"] = 1
+                nstyle["hz_line_type"] = 1
+                nstyle["fgcolor"] = "LimeGreen"
+                nstyle["shape"] = "sphere"
                 nstyle["size"] = theta_dict[name]
                 node.set_style(nstyle)
-            
-            # add in actual theta value
+
+        # edit branches and circle to rejected style
+        elif name in rejected_changes:
+            node.set_style(rejected_leaf)
+            ancestor = node.up
+            ancestor.set_style(rejected_node)
             if name in theta_dict:
-                thetaface = AttrFace("theta", fsize=10)
-                node.add_face(thetaface, column=1, position = "branch-top")
+                nstyle = NodeStyle()
+                nstyle["hz_line_color"] = "Grey"
+                nstyle["hz_line_width"] = 6
+                nstyle["hz_line_type"] = 0
+                nstyle["vt_line_width"] = 2
+                nstyle["fgcolor"] = "Grey"
+                nstyle["shape"] = "sphere"
+                nstyle["size"] = theta_dict[name]
+                node.set_style(nstyle)
+        
+        # add in theta circle for remaining reaves
+        elif name in theta_dict:
+            nstyle = NodeStyle()
+            nstyle["hz_line_width"] = 2
+            nstyle["vt_line_width"] = 2
+            nstyle["fgcolor"] = "Gainsboro"
+            nstyle["shape"] = "circle"
+            nstyle["size"] = theta_dict[name]
+            node.set_style(nstyle)
+        
+        # add in actual theta value
+        if name in theta_dict:
+            thetaface = AttrFace("theta", fsize=10)
+            node.add_face(thetaface, column=1, position = "branch-top")
             
     tree.render("Decision_Visualization.png", tree_style=ts)
+    print("The changes made during this step are shown in 'Decision_Visualization.png'")
+
+# graphically visualize the placement of individuals into species
+def visualize_imap(current_tree, popind_dict, BPP_outfile):
+    # collect the tree
+    tree = Tree(current_tree)
+    tree = name_Internal_nodes(tree)
+    
+    # collect the split ages and add onto the tree
+    tau_dict = extract_Name_TauTheta_dict(BPP_outfile)[0]
+    for node in tree.iter_descendants("levelorder"):
+        ancestor = node.up
+        if ancestor.name in tau_dict:
+            node.dist = tau_dict[ancestor.name]
+
+    # make ultrametric
+    tree = make_ultrametric(tree)
+
+    # generate background colors
+    colors = distinctipy.get_colors(len(popind_dict), pastel_factor=0.5)
+    colors = [distinctipy.get_hex(color) for color in colors]
+    color_dict = {pop:colors[i] for i, pop in enumerate(popind_dict)}
+
+    # add the descendand individuals, and add a colored boundary to represent the species
+    for leaf in tree.traverse():
+        nst = NodeStyle()
+        nst["size"] = 0
+        nst["vt_line_width"] = 2
+        nst["hz_line_width"] = 2
+
+        leaf.set_style(nst)
+        leafname = leaf.name
+        if leafname in popind_dict:
+            nst1 = NodeStyle()
+            nst1["size"] = 0
+            nst1["bgcolor"] = color_dict[leafname]
+            nst1["vt_line_width"] = 2
+            nst1["hz_line_width"] = 2
+            nst1["vt_line_color"] = color_dict[leafname]
+            leaf.set_style(nst1)
+            individual_ids = popind_dict[leaf.name]
+            for id in individual_ids:
+                leaf.add_child(name = f" {id} ", dist = 0)
+
+    # add in the name of the population to which the individuals belong to 
+    edited_parents = []
+    for leaf in tree.iter_leaves():
+        parent = leaf.up
+        if parent.name in popind_dict and parent.name not in edited_parents:
+            face = TextFace(f"  {parent.name} ", fsize=14, fstyle="bold")
+            face.margin_left = 10
+            face.hz_align = 2
+            leaf.add_face(face, column=12, position = "branch-right")
+            edited_parents.append(parent.name)
+
+
+    # set custom treestyle
+    ts = TreeStyle()
+    ts.branch_vertical_margin = 5
+    ts.show_scale = False
+    ts.margin_bottom = 10
+    ts.margin_left = 10
+    ts.margin_right = 10
+    ts.margin_top = 10
+    ts.scale = 100
+
+    tree.render("Imap_Visualization.png", tree_style=ts)
+    print("The Imap output of the current step is shown in 'Imap_Visualization.png'")

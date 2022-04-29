@@ -16,7 +16,7 @@ from helper_functions import extract_Name_TauTheta_dict
 from helper_functions import pretty_Table
 
 # TREE FUNCTION DEPENDENCIES
-from tree_helper_functions import visualize_decision
+from tree_helper_functions import visualize_decision, visualize_imap
 
 ## DATA DEPENDENCIES
 from data_dicts import HM_decision_criteria_description
@@ -401,7 +401,6 @@ def stop_check  (
 # wrapper function that implements the complete decision procedure
 def decisionModule  (
         hm_param:           HM_decision_parameters,
-        tree_proposed:      Tree_newick, 
         BPP_outfile:        BPP_out_file, 
         proposed_changes:   list[list[Species_name]], 
         accepted_pops:      Population_list, 
@@ -425,10 +424,7 @@ def decisionModule  (
     # implement the changes to the list of accepted popuations
     new_accepted_pops = implement_decision(accepted_pops, decision, hm_param)
 
-    # write the feedback tree 
-    visualize_decision(tree_proposed, MSC_param, BPP_outfile, proposed_changes, decision)
-
     # keep track of whether the program has finished 
     to_iterate = stop_check(hm_param, decision, new_accepted_pops, halt_pop_number)
 
-    return new_accepted_pops, to_iterate
+    return new_accepted_pops, to_iterate, decision

@@ -37,12 +37,15 @@ from proposal_module import get_HM_results
 
 # DECISION FUNCTIONS
 from decision_module import decisionModule
+from decision_module import get_MSC_param
 
 # DEEP CONFLICT CHECKING FUNCTIONS
 from check_conflict_functions import check_GuideTree_Imap_MSA_compat
 
 # TREE HELPER FUNCTIONS
 from tree_helper_functions import tree_ASCII
+from tree_helper_functions import visualize_decision
+from tree_helper_functions import visualize_imap
 
 ## DATA DEPENDENCIES
 from data_dicts import clprnt
@@ -225,17 +228,19 @@ def HMIteration (
     BPP_run(proposed_cfile_name)
     
     # make decision about which proposals to accept based on BPP results and HM decision criteria
-    accepted, to_iterate = decisionModule(hm_param         = hm_param,
-                                          tree_proposed    = prop_tree,
-                                          BPP_outfile      = os.path.join(BPP_cdict["outfile"]),
-                                          proposed_changes = prop_change,
-                                          accepted_pops    = input_accepted_pops,
-                                          halt_pop_number  = halt_pop_number)
+    accepted, to_iterate, decision = decisionModule(hm_param         = hm_param,
+                                                    BPP_outfile      = os.path.join(BPP_cdict["outfile"]),
+                                                    proposed_changes = prop_change,
+                                                    accepted_pops    = input_accepted_pops,
+                                                    halt_pop_number  = halt_pop_number)
 
     # write tree and imap corresponding to results
     imap, tree = get_HM_results(input_guide_tree, input_indpop_dict, accepted)
     list_To_Imap(imap, "OUTPUT_IMAP.txt")
     write_Tree(tree, "OUTPUT_TREE.txt")
+    # visualize how the delimitation has been impacted by the current step
+    visualize_decision(prop_tree, get_MSC_param(BPP_cdict["outfile"], prop_change, hm_param), BPP_cdict["outfile"], prop_change, decision)
+    visualize_imap(tree, Imap_to_PopInd_Dict(imap), BPP_cdict["outfile"])
 
     os.chdir(parent_dir)
     #-----------------------------#
