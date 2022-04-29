@@ -266,7 +266,7 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
         if name in gdi_dict:
             node.add_features(gdi=f" GDI={gdi_dict[name]}")
         if name in tau_dict:
-            node.add_features(tauval=f" 𝞽={tau_dict[name]}")
+            node.add_features(tauval=f" tau={tau_dict[name]}")
         if name in theta_dict:
             node.add_features(theta=f"θ={theta_dict[name]}")
         if name in age_dict:
