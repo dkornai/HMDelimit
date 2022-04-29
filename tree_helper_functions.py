@@ -4,8 +4,12 @@ NEWICK AND ETE3 TREE DATA STRUCTURES.
 '''
 ## DEPENDENCDIES
 # STANDARD LIBRARY DEPENDENCIES
+
 import copy
 import warnings
+# set qtl to nonwindowed mode, this way the pipeline should work through the command line
+import os
+os.environ['QT_QPA_PLATFORM']='offscreen'
 
 # EXTERNAL LIBRARY DEPENDENCIES
 with warnings.catch_warnings():
