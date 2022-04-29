@@ -1,0 +1,13 @@
+seqfile = align.txt
+Imapfile = imap_short.txt
+
+threads = 14
+burnin =   1000
+nsample = 5000
+nloci = 14
+sampfreq = 1
+
+thetaprior = 3 0.06 e
+tauprior = 3 0.01
+finetune = 1: 5 0.001 0.001 0.001 0.3 0.33 1.0
+locusrate = 1 0 0 5.0 iid

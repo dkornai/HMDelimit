@@ -122,7 +122,7 @@ general_style["vt_line_width"] = 2
 accepted_leaf = NodeStyle()
 accepted_leaf["size"] = 0
 accepted_leaf["hz_line_color"] = "LimeGreen"
-accepted_leaf["hz_line_width"] = 4
+accepted_leaf["hz_line_width"] = 6
 accepted_leaf["hz_line_type"] = 1
 accepted_leaf["vt_line_width"] = 2
 
@@ -130,20 +130,20 @@ accepted_node = NodeStyle()
 accepted_node["size"] = 0
 accepted_node["hz_line_width"] = 2
 accepted_node["vt_line_color"] = "LimeGreen"
-accepted_node["vt_line_width"] = 4
+accepted_node["vt_line_width"] = 6
 accepted_node["vt_line_type"] = 1
 
 rejected_leaf = NodeStyle()
 rejected_leaf["size"] = 0
 rejected_leaf["hz_line_color"] = "Grey"
-rejected_leaf["hz_line_width"] = 4
+rejected_leaf["hz_line_width"] = 6
 rejected_leaf["hz_line_type"] = 0
 rejected_leaf["vt_line_width"] = 2
 
 rejected_node = NodeStyle()
 rejected_node["size"] = 0
 rejected_node["vt_line_color"] = "Grey"
-rejected_node["vt_line_width"] = 4
+rejected_node["vt_line_width"] = 6
 rejected_node["vt_line_type"] = 0
 rejected_node["hz_line_width"] = 2
 
@@ -204,46 +204,28 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
             node.add_features(age=f" age={age_dict[name]}")
 
     # make the tree ultrametric
-    for node in tree.traverse("levelorder"):
-        if node.name in tau_dict:
-            node.add_feature(pr_name="tau", pr_value=tau_dict[node.name])
-
-    tau_sums = []
-    for node in tree.traverse():
-        if node.is_leaf():
-            ancestors = node.get_ancestors()
-            tau_sum = 0
-            for ancestor in ancestors:
-                tau_sum += ancestor.tau
-            tau_sums.append(tau_sum)
-
-    multiplier = (1/max(tau_sums))
-
-    for node in tree.iter_descendants("postorder"):
+    for node in tree.iter_descendants("levelorder"):
         ancestor = node.up
-        ancestor_name = ancestor.name
-        node.dist = (tau_dict[ancestor_name]*multiplier*10)
-
-    target_dist = []
-    for node in tree.traverse():
-        if node.is_leaf():
-            ancestors = node.get_ancestors()
-            dist_sum = node.dist
-            for ancestor in ancestors:
-                dist_sum += ancestor.dist
-            target_dist.append(dist_sum)
+        if ancestor.name in tau_dict:
+            node.dist = tau_dict[ancestor.name]
     
-    target = max(target_dist)
-
+    multiplier = (1/(tree.get_farthest_node()[1]))
     for node in tree.iter_descendants("postorder"):
-        if node.is_leaf():
-            node_dist_to_root = 0
-            ancestors = node.get_ancestors()
-            for ancestor in ancestors:
-                node_dist_to_root += ancestor.dist
-            node.dist = (target-node_dist_to_root)
+        node.dist = node.dist*multiplier*10
 
-    # scale theta values to be well visible
+    for node in tree.traverse("postorder"):
+        descendants = list(node.iter_descendants("levelorder"))
+        if len(descendants) > 2:
+            node_1 = descendants[0]
+            maxdist_1 = node_1.get_farthest_leaf()[1]
+            node_2 = descendants[1]
+            maxdist_2 = node_2.get_farthest_leaf()[1]
+            if maxdist_1 > maxdist_2:
+                node_2.dist = node_2.dist + (maxdist_1-maxdist_2)
+            elif maxdist_2 > maxdist_1:
+                node_1.dist = node_1.dist + (maxdist_2-maxdist_1)
+
+    # scale theta for visualization purposes
     leaf_names = [node.name for node in tree.traverse() if node.is_leaf()]
     max_leaf_theta = 0
     for item in leaf_names:
@@ -280,7 +262,7 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
             
             # write in GDI value if available
             if name in gdi_dict:
-                face = AttrFace("gdi", fsize=10, fstyle="italic")
+                face = AttrFace("gdi", fsize=10, fstyle="bold")
                 face.hz_align = 0
                 node.add_face(face, column=1, position = "aligned")
 
@@ -311,10 +293,10 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
 
                 if name in theta_dict:
                     nstyle = NodeStyle()
-                    nstyle["hz_line_width"] = 4
+                    nstyle["hz_line_width"] = 6
                     nstyle["hz_line_color"] = "LimeGreen"
                     nstyle["vt_line_color"] = "LimeGreen"
-                    nstyle["vt_line_width"] = 4
+                    nstyle["vt_line_width"] = 6
                     nstyle["vt_line_type"] = 1
                     nstyle["hz_line_type"] = 1
                     nstyle["fgcolor"] = "LimeGreen"
@@ -330,7 +312,7 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
                 if name in theta_dict:
                     nstyle = NodeStyle()
                     nstyle["hz_line_color"] = "Grey"
-                    nstyle["hz_line_width"] = 4
+                    nstyle["hz_line_width"] = 6
                     nstyle["hz_line_type"] = 0
                     nstyle["vt_line_width"] = 2
                     nstyle["fgcolor"] = "Grey"
