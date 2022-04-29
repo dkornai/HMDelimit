@@ -6,6 +6,7 @@ WATCHES THE STOPPING CONDITIONS OF THE PIPELINE
 ## DEPENDENCIES
 # STADARD LIBRARY DEPENDENCDIES
 import ast
+import contextlib
 
 # EXTERNAL LIBRARY DEPENDENCIES
 import numpy as np
@@ -418,13 +419,22 @@ def decisionModule  (
     # get the final list of population pairs that match the necessary criteria to accept
     decision = make_decision(match_dict, hm_param)
 
-    # print feedback to the user about the decision process
-    decisionUserFeedback(proposed_changes, MSC_param, hm_param, match_dict, decision)
+    # capture the text output as a file
+    with open("DECISION.txt", "w") as o:
+        with contextlib.redirect_stdout(o):
 
-    # implement the changes to the list of accepted popuations
-    new_accepted_pops = implement_decision(accepted_pops, decision, hm_param)
+            # print feedback to the user about the decision process
+            decisionUserFeedback(proposed_changes, MSC_param, hm_param, match_dict, decision)
 
-    # keep track of whether the program has finished 
-    to_iterate = stop_check(hm_param, decision, new_accepted_pops, halt_pop_number)
+            # implement the changes to the list of accepted popuations
+            new_accepted_pops = implement_decision(accepted_pops, decision, hm_param)
+
+            # keep track of whether the program has finished 
+            to_iterate = stop_check(hm_param, decision, new_accepted_pops, halt_pop_number)
+
+    # also print the text output
+    with open('DECISION.txt', 'r') as f2:
+        data = f2.read()
+        print(data)
 
     return new_accepted_pops, to_iterate, decision

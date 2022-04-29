@@ -15,6 +15,7 @@ from check_param_module import check_A00_input_compat
 
 # HELPER FUNCTIONS
 from helper_functions import read_MasterControl
+from helper_functions import string_limit
 
 # BPP CFILE MODULE
 from bpp_cfile_module import get_known_BPP_param
@@ -33,12 +34,12 @@ def get_Tree(
         mc_dict:    Master_control_dict
             ) ->    dict[str, Tree_newick]:
 
-    trees = {"tree_HM"        :mc_dict["tree_HM"], 
-             "tree_start"     :mc_dict["tree_start"], 
-             "tree_BPPA00"    :get_known_BPP_param(mc_dict, "A00" )["newick"],
-             "tree_BPPA11"    :get_known_BPP_param(mc_dict, "A11" )["newick"],
-             "tree_BPPA01"    :get_known_BPP_param(mc_dict, "A01" )["newick"],}
-
+    trees = {"tree_HM"        :string_limit(mc_dict["tree_HM"], 72), 
+             "tree_start"     :string_limit(mc_dict["tree_start"], 72),
+             "tree_BPPA00"    :string_limit(get_known_BPP_param(mc_dict, "A00" )["newick"], 72),
+             "tree_BPPA11"    :string_limit(get_known_BPP_param(mc_dict, "A11" )["newick"], 72),
+             "tree_BPPA01"    :string_limit(get_known_BPP_param(mc_dict, "A01" )["newick"], 72),
+            }
     return trees
 
 # scan the master control file and BPP control file to determine which stages to execute
@@ -54,7 +55,7 @@ def find_initial_State  (
     ## DECIDE WHICH STATE TO ENTER INTO, DEPENDING ON THE PARAMETERS THAT WERE PROVIDED
 
     # if a guide tree for the HM stage is specified in it's control file, skip all stages before HM
-    if tree_state["tree_BPPA00"] != "?":
+    if tree_state["tree_BPPA00"] != "?" and tree_state["tree_HM"] == "?":
         p_state = "A00"
         print(f"HM guide tree identified in the BPP control file: {mc_dict['ctl_file_HM']}\n\n\tTree: {tree_state['tree_BPPA00']}")
     
@@ -64,7 +65,7 @@ def find_initial_State  (
         print(f"HM guide tree identified in Master Control File!\n\n\tTree: {tree_state['tree_HM']}")
 
     # if a tree for the SD stage is specified in a seperate control file
-    elif tree_state["tree_BPPA11"] != "?":
+    elif tree_state["tree_BPPA11"] != "?" and tree_state["tree_start"] == "?":
         p_state = "A11+A00"
         print(f"BPP A11 guide tree identified in the BPP control file: {mc_dict['ctl_file_delim']}\n\n\tTree: {tree_state['tree_BPPA11']}")
     # if a starting tree for A11 is specified in the MCF
@@ -123,8 +124,6 @@ def find_initial_State  (
         print("1) Use BPP A01 to infer a species phylogeny from imap and seqfile")
         print("1) Use BPP A11 to infer a species delimitation given the starting tree produced in the previous A01 stage")
         print("3) Use BPP A00 and the the Hierarchical Method to further refine the delimitation produced by the previous A11 stage")
-
-    print()
 
     return p_state
 

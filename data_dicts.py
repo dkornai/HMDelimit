@@ -83,7 +83,7 @@ master_Control_feedback =   {
                     },
 "ctl_file_delim":  {-2:"[X] ERROR: THE FILE CAN NOT BE INTERPRETED AS A BPP CONTROL FILE\n\n\t Please consult the BPP manual for advice on BPP control files, or leave empty\n",
                     -1:"[X] ERROR: NO FILE OF ANY TYPE AT REQUESTED LOCATION\n\n\t Please give the name of a valid file, or leave empty\n",
-                    0 :" ~  BPP A01 Starting delimitation control file not specified",
+                    0 :" ~  BPP A11 Starting delimitation control file not specified",
                     1 :"[*] BPP A11 Starting delimitation control file successfully found",
                     },   
 "ctl_file_HM":     {-2:"[X] ERROR: THE FILE CAN NOT BE INTERPRETED AS A BPP CONTROL FILE\n\n\t Please consult the BPP manual for advice on BPP control files, or leave empty\n",

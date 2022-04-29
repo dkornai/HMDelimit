@@ -20,6 +20,7 @@ import distinctipy
 
 # HELPER DEPENDENCIES
 from helper_functions import flatten
+from helper_functions import string_limit
 from helper_functions import extract_Name_TauTheta_dict
 
 ## TYPE HINTING 
@@ -93,8 +94,8 @@ def tree_To_Newick  (
 
 # write a newick tree to a file
 def write_Tree  (
-    tree:               Tree_newick,
-    filename:           file_path,
+        tree:           Tree_newick,
+        filename:       file_path,
                 ):
     
     f = open(filename, "x")
@@ -105,9 +106,50 @@ def tree_ASCII  (
         tree:           Tree_newick
                 ) ->    str:
 
+    # start by naming the internal nodes, and assuming they are reasonably sized
     etetree = name_Internal_nodes(Tree(tree))
+    
+    # if internal node names would make the tree to large, dont print them 
+    ascitree = etetree.get_ascii()
+    ascirows = ascitree.split("\n")
+    maxlen = max(map(len, ascirows))
+    if maxlen > 140:
+        ascitree = etetree.get_ascii(show_internal=False)
 
-    return etetree.get_ascii()
+    # if the tree is still too large, limit the length of the node names
+    ascirows = ascitree.split("\n")
+    maxlen = max(map(len, ascirows))
+    if maxlen > 140:
+        for node in etetree.traverse():
+            node.name = string_limit(node.name, 36)
+    ascitree = etetree.get_ascii(show_internal=False)
+
+    return ascitree
+
+# return a list of the leaf node names from a tree
+def leafname_list   (
+        intree:             Tree_newick
+                    ) ->    list[str]:
+
+    tree = Tree(intree)
+    leafnames = [name for name in tree.iter_leaf_names()]
+
+    return leafnames
+
+# return the list of the currently accepted leaf node names, without the internal populations
+def accepted_leaves (
+        guide_tree:         Tree_newick,
+        accepted_pops:      Population_list
+                    ) ->    list[str]:
+
+    tree = Tree(guide_tree)
+    tree = name_Internal_nodes(tree)
+    tree.prune(accepted_pops)
+
+    leafnames = [name for name in tree.iter_leaf_names()]
+
+    return leafnames
+
 
 ## PROVIDE A VISUALIZATION OF THE CHANGES THAT WERE MADE IN THE HM STAGE
 '''
@@ -280,14 +322,15 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
             if ancestorname in age_dict and ancestorname not in age_ancestors:
                 ageface = AttrFace("age", fsize=10, fstyle="italic")
                 ageface.margin_right = -10*(len(str(age_dict[ancestorname]))+5)
-                ageface.vt_align = 1
+                ageface.vt_align = 0
+                ageface.margin_top = -5
                 ancestor.add_face(ageface, column=2, position = "branch-bottom")
                 age_ancestors.append(ancestorname)
             # write in tau value
             if ancestorname in tau_dict and ancestorname not in tau_ancestors:
                 tauface = AttrFace("tauval", fsize=10)
                 tauface.margin_right = -90
-                tauface.vt_align = 1
+                tauface.margin_bottom = 5
                 ancestor.add_face(tauface, column=2, position = "branch-top")
                 tau_ancestors.append(ancestorname)
 
@@ -342,13 +385,13 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
             node.add_face(thetaface, column=1, position = "branch-top")
             
     tree.render("Decision_Visualization.png", tree_style=ts)
-    print("The changes made during this step are shown in 'Decision_Visualization.png'")
 
 # graphically visualize the placement of individuals into species
 def visualize_imap(current_tree, popind_dict, BPP_outfile):
     # collect the tree
     tree = Tree(current_tree)
-    tree = name_Internal_nodes(tree)
+    if len(list(tree.iter_descendants("levelorder"))) > 1:
+        tree = name_Internal_nodes(tree)
     
     # collect the split ages and add onto the tree
     tau_dict = extract_Name_TauTheta_dict(BPP_outfile)[0]
@@ -365,13 +408,14 @@ def visualize_imap(current_tree, popind_dict, BPP_outfile):
     colors = [distinctipy.get_hex(color) for color in colors]
     color_dict = {pop:colors[i] for i, pop in enumerate(popind_dict)}
 
+    # stylesheet
+    nst = NodeStyle()
+    nst["size"] = 0
+    nst["vt_line_width"] = 2
+    nst["hz_line_width"] = 2
+
     # add the descendand individuals, and add a colored boundary to represent the species
     for leaf in tree.traverse():
-        nst = NodeStyle()
-        nst["size"] = 0
-        nst["vt_line_width"] = 2
-        nst["hz_line_width"] = 2
-
         leaf.set_style(nst)
         leafname = leaf.name
         if leafname in popind_dict:
@@ -409,4 +453,62 @@ def visualize_imap(current_tree, popind_dict, BPP_outfile):
     ts.scale = 100
 
     tree.render("Imap_Visualization.png", tree_style=ts)
-    print("The Imap output of the current step is shown in 'Imap_Visualization.png'")
+
+def visualize_progress(input_guide_tree, accepted_pops):
+    tree = Tree(input_guide_tree)
+    tree = name_Internal_nodes(tree)
+    tree.convert_to_ultrametric()
+    
+    # style sheet
+    nstyle = NodeStyle()
+    nstyle["size"] = 0
+    nstyle["hz_line_color"] = "Grey"
+    nstyle["vt_line_color"] = "Grey"
+    nstyle["hz_line_width"] = 2
+    nstyle["hz_line_type"] = 1
+    nstyle["vt_line_type"] = 1
+    nstyle["vt_line_width"] = 2
+
+    nstyle2 = NodeStyle()
+    nstyle2["size"] = 0
+    nstyle2["hz_line_color"] = "Black"
+    nstyle2["vt_line_color"] = "Black"
+    nstyle2["hz_line_width"] = 4
+    nstyle2["hz_line_type"] = 0
+    nstyle2["vt_line_type"] = 0
+    nstyle2["vt_line_width"] = 4
+
+    nstyle3 = NodeStyle()
+    nstyle3["size"] = 0
+    nstyle3["hz_line_color"] = "Black"
+    nstyle3["vt_line_color"] = "Grey"
+    nstyle3["hz_line_width"] = 4
+    nstyle3["hz_line_type"] = 0
+    nstyle3["vt_line_type"] = 1
+    nstyle3["vt_line_width"] = 2
+
+    # set basic style
+    for node in tree.traverse():
+        node.set_style(nstyle)
+
+    # set styles according to acceptance status, and add extra annotation for node names
+    for node in tree.traverse():
+        if node.name in accepted_pops:
+            node.set_style(nstyle2)
+            face = TextFace(f"{string_limit(node.name, 8)}", fsize=14, fstyle="bold")
+            face.hz_align = 2
+            face.margin_right = 20
+            node.add_face(face, column=1, position = "branch-top")
+        elif node.is_leaf() == False:
+            face = TextFace(f"{string_limit(node.name, 8)}", fsize=8)
+            face.hz_align = 2
+            face.margin_right = 20
+            node.add_face(face, column=1, position = "branch-bottom")
+
+    for node in tree.traverse():
+        if node.name not in accepted_pops:
+            parent = node.up
+            if parent.name in accepted_pops:
+                parent.set_style(nstyle3)
+
+    tree.render("Output_Topology.png", tree_style=ts)

@@ -64,6 +64,17 @@ def padString   (
     
     return string
 
+# limit the maximum length of a string
+def string_limit(
+        string:         str,
+        limit:          int,
+                ) ->    str:
+
+    if len(string) > limit:
+        string = f"{string[:limit-3]}..."
+    
+    return string
+
 # strip more than 1 trailing or leading whitespace
 def stripall(
         input_string:   str
@@ -169,7 +180,7 @@ def pretty  (
         printkey = str(key)
         while len(printkey) < longest_key_length:
             printkey = printkey + " "
-        print("  ", printkey,"=",dict[key])
+        print("  ", printkey,"=",string_limit(str(dict[key]), 72))
     
     print()
 

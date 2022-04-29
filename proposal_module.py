@@ -86,7 +86,9 @@ def get_HM_StartingState(
     
     tree = Tree(input_guide_tree)
     tree = name_Internal_nodes(tree)
-    
+    nodecount = 0
+    for node in tree.traverse():
+        nodecount += 1
 
     if mode == "merge":
         # the starting configuration is that all nodes are accepted as species, and then progressively rejected
@@ -95,7 +97,7 @@ def get_HM_StartingState(
     elif mode == "split":
         # the starting configurateion is that all nodes except for the root are rejected as species
         starting_pops = [node.name for x, node in enumerate(tree.traverse("preorder")) if x == 0]
-        halt_pop_number = len(tree) # the program should always end if all possible nodes were split
+        halt_pop_number = nodecount # the program should always end if all possible nodes were split
     
     return starting_pops, halt_pop_number
 
@@ -141,6 +143,7 @@ def HMproposal  (
     # return the three components of the proposal
     return prop_change, proposed_tree, proposed_imap
 
+# function for collecting the results of a single HM iteration, based on the list of accepted populations
 def get_HM_results  (
         guide_tree_newick:  Tree_newick, 
         base_indpop_dict, 
@@ -159,7 +162,7 @@ def get_HM_results  (
     # tree topology corresponding to the accepted populations
     # extra condition added due to ete3 error, as ete3 refuses to only return a tree from the root node
     if len(current_pops_list) == 1:
-        tree = f"({current_pops_list[0]})"
+        tree = f"({current_pops_list[0]});"
     # in all other cases:
     else:
         result_tree = copy.deepcopy(guide_ete3_tree)

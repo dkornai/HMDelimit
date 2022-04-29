@@ -13,7 +13,8 @@ with warnings.catch_warnings():
     from ete3 import Tree
 
 # HELPER FUNCTION DEPENDENCIES
-from helper_functions import alignfile_to_MSA
+from helper_functions import string_limit
+from helper_functions import alignfile_to_MSA 
 from helper_functions import Imap_to_List
 from helper_functions import Imap_to_PopInd_Dict
 
@@ -131,7 +132,7 @@ def check_Imap_Tree_compat(param_check, imapfile, tree):
     if param_check["newick"] != 0 and param_check["Imapfile"] != 0:
         print("\tChecking compatibility of user specified Imap file and newick tree:\n")
         print(f"\t1) Imap file   = {imapfile}")
-        print(f"\t2) Newick tree = {tree}\n")
+        print(f"\t2) Newick tree = {string_limit(tree, 72)}\n")
 
         # check can only proceed if both parameters are of the correct type to begin with
         if param_check["newick"] == 1 and param_check["Imapfile"] == 1:
@@ -209,8 +210,8 @@ def check_SandT_Imap_MSA_compat(param_check, s_and_t, popsizes, imapfile, alignm
         print(f"\t1) Imap file   = {imapfile}")
         print(f"\t2) MSA file    = {alignmentfile}")
         print(f"\t3) species&tree line supplied in BPP control file:\n")
-        print(f"\t\t{s_and_t}")
-        print(f"\t\t   {popsizes}\n")
+        print(f"\t\t{string_limit(s_and_t, 72)}")
+        print(f"\t\t   {string_limit(popsizes, 72)}\n")
         
         # check can only proceed if all parameters are of the correct type to begin with, and no upstream incompatibilities exist
         if param_check["species&tree"] == 1 and param_check["seqfile"] == 1 and param_check["Imapfile"] == 1 and param_check['imap_seq_compat'] == 1:
@@ -239,7 +240,7 @@ def check_GuideTree_Imap_MSA_compat(input_newick, imap, alignmentfile):
     print("\tChecking if the guide tree, Imap file, and MSA are suitable for GDI calculations:\n")
     print(f"\t1) Imap contents listed above")
     print(f"\t2) MSA file    = {alignmentfile}")
-    print(f"\t3) Guide Tree  = {input_newick}\n")
+    print(f"\t3) Guide Tree  = {string_limit(input_newick, 72)}\n")
 
     popind_dict = Imap_to_PopInd_Dict(imap) 
     alignment = alignfile_to_MSA(alignmentfile)

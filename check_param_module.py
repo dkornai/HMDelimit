@@ -112,7 +112,8 @@ def check_Master_Control(
     values = list(param.values())
     feedback = [master_Control_feedback[key][par_check[key]] for key in par_names]
     pretty_Table(input_table = [par_names, values, feedback], 
-                 input_colnames = ["PARAMETER", "VALUE", "FEEDBACK"])
+                 input_colnames = ["PARAMETER", "VALUE", "FEEDBACK"],
+                 width_limit=[1, 36])
 
 
     ## MAKE FINAL DECISION TO PROCEED OR NOT

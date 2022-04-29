@@ -6,6 +6,7 @@ INSTALL ALL PYTHON DEPENDENCIES WITH: pip -r requirements.txt
 numpy
 pandas
 biopython
+distinctipy
 ete3
 # ete3 dependencies (not installed by pip)
 pyqt5

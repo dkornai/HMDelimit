@@ -1,6 +1,7 @@
 seqfile = align.txt
 Imapfile = imap_short.txt
 
+HM guide tree = ((((((((a_BZ, a_GT), (a_HN, a_SMX)), a_NI), (((((s_CR_a, s_CR_c), s_CR_b), s_PN), ((sg_6_CR_a, sg_6_CR_b), sg_6_CR_c)), (((sg_5_GT_a, sg_5_GT_b), sg_5_HN_e), (sg_5_HN_a, (sg_5_HN_b, ((sg_5_HN_c, sg_5_NI_a), sg_5_HN_d)))))), sg_7), sg_4), sg_3), (sg_1, sg_2));
 threads = 14 2
 burnin =   2000
 nsample = 10000
