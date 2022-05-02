@@ -156,12 +156,16 @@ def overwrite_dict  (
 
 # create a directory if it does not exist, and halt execution of the directory exists
 def create_TargetDir(
-        target_dir_name:    file_path
+        target_dir_name:    file_path,
+        user_message:       str = None
                     ):
     
     try:
         os.mkdir(target_dir_name)
-        print(f"Directory '{target_dir_name}' created") 
+        if user_message == None:
+            print(f"Directory '{target_dir_name}' created")
+        else:
+            print(user_message)
     
     except FileExistsError:
         print(f"ERROR: Directory '{target_dir_name}' already exists.")
@@ -180,7 +184,7 @@ def pretty  (
         printkey = str(key)
         while len(printkey) < longest_key_length:
             printkey = printkey + " "
-        print("  ", printkey,"=",string_limit(str(dict[key]), 72))
+        print("  ", printkey,"=",string_limit(str(dict[key]), 84))
     
     print()
 
@@ -485,15 +489,16 @@ def extract_Speciestree (
         # extract the tree in newick format if a normal tree output was produced
         try:
             tree = re.search("\(.+\);" , input_file[rowindex_tree].split("  ")[-1]).group()
+            
             return tree
         
         # handle edge case where BPP lumps all species into a single species
         except:
-            tree = re.search(".;" , input_file[rowindex_tree].split("  ")[-1]).group()
+            tree = re.search("\(.+\)" , input_file[rowindex_tree]).group()
+            tree += ";"
             print('\n>> BPP A11 OUTPUT INDICATES THAT ALL SUPPLIED POPULATIONS ARE A SINGLE SPECIES!')
-            print('THE HIERARCHICAL METHOD SECTION OF THE PIPELINE WILL NOT BE EXECUTED!')
             
-            exit()
+            return tree
 
     except:
         print("\n[X] ERROR: NO TREE COULD NOT BE EXTRACTED FROM BPP RESULTS")

@@ -18,9 +18,6 @@ from helper_functions import extract_Speciestree
 from helper_functions import extract_Pops
 from helper_functions import string_limit
 
-# TREE HELPER FUNCTIONS
-from tree_helper_functions import visualize_progress, write_Tree
-
 # BPP CONTROL FILE RELATED FUNCTIONS
 from bpp_cfile_module import get_known_BPP_param 
 from bpp_cfile_module import generate_unkown_BPP_param
@@ -46,6 +43,9 @@ from check_conflict_functions import check_GuideTree_Imap_MSA_compat
 # TREE HELPER FUNCTIONS
 from tree_helper_functions import tree_ASCII
 from tree_helper_functions import visualize_decision
+from tree_helper_functions import visualize_tree
+from tree_helper_functions import write_Tree
+from tree_helper_functions import visualize_progress
 from tree_helper_functions import visualize_imap
 from tree_helper_functions import leafname_list
 from tree_helper_functions import accepted_leaves
@@ -73,7 +73,7 @@ def StartingTopolgy (
     
     # create the target directory specific to the step, and the name of the MCF
     target_dir = f'{input_mcfile[0:-4]}_0_StartPhylo'
-    create_TargetDir(target_dir)
+    create_TargetDir(target_dir, f"The directory '{target_dir}' was created to hold the results for the Phylogeny Inference stage.")
 
     # set up the BPP control file specific to the A01 stage
     BPP_A01_cfile_name = "BPP_A01_StartPhylo.ctl"
@@ -100,8 +100,9 @@ def StartingTopolgy (
     # extract the species tree
     tree = extract_Speciestree(BPP_A01_cfile_name)
 
-    # write resulting tree for manual inspection
+    # write resulting tree in newick and image format for manual inspection
     write_Tree(tree, "OUTPUT_TREE.txt")
+    visualize_tree(tree, "OUTPUT_TREE.png")
 
     os.chdir(parent_dir)
     #-----------------------------#
@@ -127,7 +128,7 @@ def StartingDelimitation(
     
     # create the target directory specific to the step
     target_dir = f'{input_mcfile[0:-4]}_1_StartDelim'
-    create_TargetDir(target_dir)
+    create_TargetDir(target_dir, f"The directory '{target_dir}' was created to hold the results for the Starting Delimitation stage.")
 
     # set up the BPP control file specific to the A11 stage
     BPP_A11_cfile_name = "BPP_A11_StartDelim.ctl"
@@ -140,6 +141,10 @@ def StartingDelimitation(
     print("\nBPP CONTROL FILE:")
     pretty(BPP_cdict)
 
+    # write starting tree and imap input for visual inspection
+    visualize_imap  (BPP_cdict["newick"], Imap_to_PopInd_Dict(BPP_cdict["Imapfile"]), BPP_outfile = None, image_name= os.path.join(target_dir, "INPUT_IMAP.png"))
+    visualize_tree  (BPP_cdict["newick"], image_name= os.path.join(target_dir, "INPUT_TREE.png"))
+
     # unique ID encoding
     imap_unique_ids_name = "Imap_UniqueID.txt"
     BPP_cdict, imap_unique_ids, remap_dict = uniqueID_encoding(BPP_cdict, imap_unique_ids_name)
@@ -149,11 +154,12 @@ def StartingDelimitation(
     list_To_Imap        (imap_unique_ids, os.path.join(target_dir, imap_unique_ids_name))
     shutil.copy         (src = BPP_cdict['seqfile'],  dst = target_dir)
 
+
        # STARTING DELIMITATION #
     ###############################
     #-----------------------------#
     os.chdir(target_dir)
-    
+
     # run BPP
     BPP_run(BPP_A11_cfile_name)
         
@@ -166,7 +172,9 @@ def StartingDelimitation(
         
     # write resulting Imap and tree for manual inspection if needed
     list_To_Imap(imap, "OUTPUT_IMAP.txt")
+    visualize_imap  (guide_tree, Imap_to_PopInd_Dict(imap), BPP_outfile = None, image_name= f"OUTPUT_IMAP.png")
     write_Tree(guide_tree, "OUTPUT_TREE.txt")
+    visualize_tree  (guide_tree, f"OUTPUT_TREE.png")
 
     os.chdir(parent_dir)
     #-----------------------------#
@@ -203,7 +211,7 @@ def HMIteration (
 
     # create the target directory specific to the step
     target_dir = f'{input_mcfile[0:-4]}_2_HM_{step}'
-    create_TargetDir(target_dir_name=target_dir)
+    create_TargetDir(target_dir, f"The directory '{target_dir}' was created to hold the results for step {step} of the Hierarchical Method.")
     
     # generate a proposal based on the previously accepted results
     prop_change, prop_tree, prop_imap = HMproposal(guide_tree_newick = input_guide_tree,
@@ -233,23 +241,23 @@ def HMIteration (
         
     # run BPP 
     BPP_run(proposed_cfile_name)
-    
+    outfilename = BPP_cdict["outfile"]
+
     # make decision about which proposals to accept based on BPP results and HM decision criteria
     accepted, to_iterate, decision = decisionModule(hm_param         = hm_param,
-                                                    BPP_outfile      = os.path.join(BPP_cdict["outfile"]),
+                                                    BPP_outfile      = outfilename,
                                                     proposed_changes = prop_change,
                                                     accepted_pops    = input_accepted_pops,
                                                     halt_pop_number  = halt_pop_number)
 
-    # write tree and imap corresponding to results
+    # write tree and imap, and images corresponding to results
     imap, tree = get_HM_results(input_guide_tree, input_indpop_dict, accepted)
-    list_To_Imap    (imap, "OUTPUT_IMAP.txt")
-    write_Tree      (tree, "OUTPUT_TREE.txt")
-    
-    # write images showing how the delimitation has been impacted by the current step
-    visualize_decision  (prop_tree, get_MSC_param(BPP_cdict["outfile"], prop_change, hm_param), BPP_cdict["outfile"], prop_change, decision)
-    visualize_imap      (tree, Imap_to_PopInd_Dict(imap), BPP_cdict["outfile"])
-    visualize_progress  (input_guide_tree, accepted)
+    list_To_Imap    (imap, f"OUTPUT_IMAP_step_{step}.txt")
+    visualize_imap  (tree, Imap_to_PopInd_Dict(imap), outfilename, f"OUTPUT_IMAP_step_{step}.png")
+    write_Tree      (tree, f"OUTPUT_TREE_step_{step}.txt")
+    visualize_tree  (tree, f"OUTPUT_TREE_step_{step}.png")
+    visualize_decision  (prop_tree, get_MSC_param(outfilename, prop_change, hm_param), outfilename, prop_change, decision, f"DECISION_step_{step}.png")
+    visualize_progress  (input_guide_tree, accepted, f"GUIDE_VS_CURRENT_TREE_step_{step}.png")
 
     os.chdir(parent_dir)
     #-----------------------------#
@@ -275,13 +283,13 @@ def HierarchicalMethod  (
         input_guide_tree:   Tree_newick = None, 
         input_imap:         Imap_list = None,
                         ):
-    
-    print(f"\n{clprnt.BLUE}BEGINNING THE HIERARCHICAL METHOD{clprnt.end}")
+
+    parent_dir = os.getcwd()
+    print(f"\n{clprnt.BLUE}BEGINNING THE HIERARCHICAL METHOD{clprnt.end}\n")
  
     mc_dict = read_MasterControl(input_mcfile)
 
-
-    ## COLLECT NECESSARY DATA FOR INFERRING THE STARTING STA
+    ## COLLECT NECESSARY DATA FOR STARTING THIS STAGE OF THE PIPELINE
     # collect the guide tree from the user or the previous stage
     if input_guide_tree == None:
         guide_tree = get_known_BPP_param(mc_dict, "A00")["newick"]
@@ -293,49 +301,82 @@ def HierarchicalMethod  (
         indpop_dict = Imap_to_IndPop_Dict(input_imap)
     else:
         indpop_dict = Imap_to_IndPop_Dict(input_imap)
-    
+    # verify that there are multiple species to begin with
+    if len(Imap_to_PopInd_Dict(input_imap)) < 2:
+        print("[X] ERROR: SINGLE POPULATION SUPPLIED TO STAGE")
+        print('THE HIERARCHICAL METHOD WILL NOT BE EXECUTED!')
+        exit()
 
-    ## SET UP THE STARTING STATE
-    HMmode = get_HM_parameters(mc_dict)["mode"]
-    accepted_pops, halt_pop_number = get_HM_StartingState(guide_tree, HMmode)
-    accepted_pops_over_time = []
-    if   HMmode == "merge":
-        accepted_pops_over_time.append(accepted_leaves(guide_tree, accepted_pops))
-    elif HMmode == "split":
-        accepted_pops_over_time.append(accepted_pops)
-
-    ## PRINT INTRODUCTORY FEEDBACK TO THE USER ABOUT THE STARTING STATE
-    if   HMmode == "merge":
-        print("\nTHE HIERARCHICAL METHOD WILL BE APPLIED IN 'MERGE' MODE.\n")
-        print("This means that the program will start with populations separated according to the guide tree,")
-        print("and find the optimal delimitation pattern by progressively merging populations.")
-    elif HMmode == "split":
-        print("\nTHE HIERARCHICAL METHOD WILL BE APPLIED IN 'SPLIT' MODE.\n")
-        print("This means that the program will start with all populations merged at the root of the guide tree,")
-        print("and find the optimal delimitation pattern by progressively splitting populations.")
-
-    print(f"\n>> STARTING STATE:\n")
+    # provide written feedback to the user about the input state (not always the same as the starting state!)
+    print(f">>BEFORE THE HM STAGE BEGINS:\n")
     print("THE ACCEPTED SPECIES ARE:\n")
-    for population in accepted_pops_over_time[0]:
+    for population in Imap_to_PopInd_Dict(input_imap):
         print(f"\t{population}")
     print()
     print(f"GUIDE TREE NEWICK:\n\n\t{string_limit(guide_tree, 120)}")
     print("\nGUIDE TREE ASCII:")
     print(tree_ASCII(guide_tree))
-    print(f"\nSTARTING IMAP:\n")
+    print(f"\nINPUT IMAP:\n")
     pretty(Imap_to_PopInd_Dict(input_imap))
 
     ## PERFORM CHECK OF SUITABILITY FOR GDI CALCULATIONS
     print("COMPATIBILITY CHECKING:\n")
     check_GuideTree_Imap_MSA_compat(guide_tree, input_imap, get_known_BPP_param(mc_dict, "A00")["seqfile"])
 
+    ## SET UP THE STARTING STATE
+    # create the starting state imap and tree, depending on if the mode is split or merge
+    HMmode = get_HM_parameters(mc_dict)["mode"]
+    
+    accepted_pops, halt_pop_number, start_tree, start_imap = get_HM_StartingState(guide_tree, input_imap, HMmode)
+    
+    accepted_pops_over_time = []
+    if   HMmode == "merge":
+        accepted_pops_over_time.append(accepted_leaves(guide_tree, accepted_pops))
+    elif HMmode == "split":
+        accepted_pops_over_time.append(accepted_pops)
+
+    # print introductory feedback to the user about the type of steps that will be executed according to the mode
+    if   HMmode == "merge":
+        print("\n>> THE HIERARCHICAL METHOD WILL BE APPLIED IN 'MERGE' MODE.\n")
+        print("This means that the program will start with populations separated according to the guide tree,")
+        print("and find the optimal delimitation pattern by progressively merging populations. Accordingly:")
+    elif HMmode == "split":
+        print("\n>> THE HIERARCHICAL METHOD WILL BE APPLIED IN 'SPLIT' MODE.\n")
+        print("This means that the program will start with all populations merged at the root of the guide tree,")
+        print("and find the optimal delimitation pattern by progressively splitting populations. Accordingly:")
+
+    # provide written feedback to the user about the starting state according to the mode
+    print(f"\n>> STARTING STATE:\n")
+    print("ACCEPTED SPECIES ARE:\n")
+    for population in accepted_pops_over_time[0]:
+        print(f"\t{population}")
+    print()
+    print(f"STARTING TREE NEWICK:\n\n\t{string_limit(start_tree, 120)}")
+    print("\nSTARTING TREE ASCII:")
+    print(tree_ASCII(start_tree))
+    print(f"\nSTARTING IMAP:\n")
+    pretty(Imap_to_PopInd_Dict(start_imap))
+    
+    # write files showing the user the starting state
+    target_dir = f'{input_mcfile[0:-4]}_2_HM_0_StartState'
+    create_TargetDir(target_dir, f"The directory '{target_dir}' was created to hold the starting state of the Hierarchical Method.")
+    os.chdir(target_dir)
+    list_To_Imap    (start_imap, "HM_STARTING_IMAP.txt")
+    visualize_imap  (start_tree, Imap_to_PopInd_Dict(start_imap), BPP_outfile = None, image_name = "HM_STARTING_IMAP.png")
+    write_Tree      (start_tree, "HM_STARTING_TREE.txt")
+    visualize_tree  (start_tree, "HM_STARTING_TREE.png")
+    os.chdir(parent_dir)
+
+
+
            # HM ITERATIONS #
     ##############################
     #-----------------------------#
-    step = 1
+    step = 0
     to_iterate = True
     # run the HM until no more merges or splits can be executed
     while to_iterate == True:
+        step += 1
         accepted_pops, to_iterate = HMIteration(input_mcfile        = input_mcfile,
                                                 input_guide_tree    = guide_tree,
                                                 input_indpop_dict   = indpop_dict,
@@ -343,22 +384,22 @@ def HierarchicalMethod  (
                                                 halt_pop_number     = halt_pop_number,
                                                 step                = step)
         accepted_pops_over_time.append(accepted_leaves(guide_tree, accepted_pops))
-        step += 1
     #-----------------------------#
     ###############################
 
-    ## PROVIDE FEEDBACK TO USER
+
+
+    ## PROVIDE FEEDBACK TO USER WHEN THE PIPELINE FINISHES
     print(f"{clprnt.BLUE}\n<< HIERARCHICAL METHOD FINISHED >>{clprnt.end}")
     
     # write final output state to an output folder
     target_dir = f'{input_mcfile[0:-4]}_Final_Result'
-    create_TargetDir(target_dir_name=target_dir)
-    print("Imap file, phylogenetic tree, and associated images corresponding to final results can be found in the above folder.")
-    final_folder = f'{input_mcfile[0:-4]}_2_HM_{step-1}'
-    shutil.copy(src = os.path.join(final_folder, "OUTPUT_IMAP.txt"),  dst = target_dir)
-    shutil.copy(src = os.path.join(final_folder, "OUTPUT_TREE.txt"), dst = target_dir)
-    shutil.copy(src = os.path.join(final_folder, "Output_Topology.png"), dst = target_dir)
-    shutil.copy(src = os.path.join(final_folder, "Imap_Visualization.png"), dst = target_dir)
+    create_TargetDir(target_dir, f"The directory '{target_dir}' was created to hold the the final results.")
+    final_folder = f'{input_mcfile[0:-4]}_2_HM_{step}'
+    shutil.copy(src = os.path.join(final_folder, f"OUTPUT_IMAP_step_{step}.txt"), dst = target_dir)
+    shutil.copy(src = os.path.join(final_folder, f"OUTPUT_IMAP_step_{step}.png"), dst = target_dir)
+    shutil.copy(src = os.path.join(final_folder, f"OUTPUT_TREE_step_{step}.txt"), dst = target_dir)
+    shutil.copy(src = os.path.join(final_folder, f"OUTPUT_TREE_step_{step}.png"), dst = target_dir)
     
     # print the accepted species at each step
     print("\nACCEPTED SPECIES AT EACH ITERATION:\n")
@@ -376,5 +417,5 @@ def HierarchicalMethod  (
             for pop in poplist:
                     print(f"\t{pop}")
     
-    print("\n-- end of run --\n")
+    print("\n-- end of run --")
     exit()

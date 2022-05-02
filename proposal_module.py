@@ -80,9 +80,10 @@ def remap_to_imapList   (
 # generate the starting state of accepted populations for the HM stage, depending on if the method is progressive
 # merge, or progressive split. Also return the number of populations when the end condition is reached
 def get_HM_StartingState(
-        input_guide_tree:       Tree_newick, 
+        input_guide_tree:       Tree_newick,
+        input_imaplist:         Imap_list, 
         mode:                   HM_mode
-                        ) ->    tuple[Population_list, int]:
+                        ) ->    tuple[Population_list, int, Tree_newick, Imap_list]:
     
     tree = Tree(input_guide_tree)
     tree = name_Internal_nodes(tree)
@@ -94,12 +95,17 @@ def get_HM_StartingState(
         # the starting configuration is that all nodes are accepted as species, and then progressively rejected
         starting_pops = [node.name for node in tree.traverse("preorder")]
         halt_pop_number = 1 # the program should always end if all all nodes except the root have been rejeceted
+        starting_imap = input_imaplist
+        starting_tree = input_guide_tree
+        
     elif mode == "split":
         # the starting configurateion is that all nodes except for the root are rejected as species
-        starting_pops = [node.name for x, node in enumerate(tree.traverse("preorder")) if x == 0]
+        starting_pops = [node.name for node in tree.traverse("preorder") if node.is_root()]
         halt_pop_number = nodecount # the program should always end if all possible nodes were split
-    
-    return starting_pops, halt_pop_number
+        starting_imap = [input_imaplist[0], [str(starting_pops[0]) for x in range(len(input_imaplist[1]))]]
+        starting_tree = f"({str(starting_pops[0])});"
+
+    return starting_pops, halt_pop_number, starting_tree, starting_imap
 
 
 # generate the proposal for which populations should be removed or added to the accepted list, depending on the mode

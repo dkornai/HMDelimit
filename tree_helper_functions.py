@@ -226,7 +226,7 @@ def make_ultrametric(tree):
     return tree
 
 # main function implementing the drawing of the feedback tree
-def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, decision):
+def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, decision, image_name = "decision.png"):
     
     # collect the accepted and rejected changes
     if len(decision) == 0:
@@ -401,24 +401,29 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
             thetaface.hz_align = 0
             node.add_face(thetaface, column=1, position = "branch-top")
             
-    tree.render("Decision_Visualization.png", tree_style=ts)
+    tree.render(image_name, tree_style=ts)
 
 # graphically visualize the placement of individuals into species
-def visualize_imap(current_tree, popind_dict, BPP_outfile):
+def visualize_imap(current_tree, popind_dict, BPP_outfile = None, image_name = "imap.png"):
     # collect the tree
     tree = Tree(current_tree)
     if len(list(tree.iter_descendants("levelorder"))) > 1:
         tree = name_Internal_nodes(tree)
     
-    # collect the split ages and add onto the tree
-    tau_dict = extract_Name_TauTheta_dict(BPP_outfile)[0]
-    for node in tree.iter_descendants("levelorder"):
-        ancestor = node.up
-        if ancestor.name in tau_dict:
-            node.dist = tau_dict[ancestor.name]
+    # if node lengths are not available, make the tree ultrametric using the built in method
+    if BPP_outfile == None:
+        tree.convert_to_ultrametric()
+    # if node lengths are available, make the tree ultrametric using the actual tau values
+    elif BPP_outfile != None:
+        # collect the split ages and add onto the tree
+        tau_dict = extract_Name_TauTheta_dict(BPP_outfile)[0]
+        for node in tree.iter_descendants("levelorder"):
+            ancestor = node.up
+            if ancestor.name in tau_dict:
+                node.dist = tau_dict[ancestor.name]
 
-    # make ultrametric
-    tree = make_ultrametric(tree)
+        # make ultrametric
+        tree = make_ultrametric(tree)
 
     # generate background colors
     colors = distinctipy.get_colors(len(popind_dict), pastel_factor=0.5)
@@ -469,9 +474,9 @@ def visualize_imap(current_tree, popind_dict, BPP_outfile):
     ts.margin_top = 10
     ts.scale = 100
 
-    tree.render("Imap_Visualization.png", tree_style=ts)
+    tree.render(image_name, tree_style=ts)
 
-def visualize_progress(input_guide_tree, accepted_pops):
+def visualize_progress(input_guide_tree, accepted_pops, image_name = "progress.png"):
     tree = Tree(input_guide_tree)
     tree = name_Internal_nodes(tree)
     tree.convert_to_ultrametric()
@@ -528,4 +533,25 @@ def visualize_progress(input_guide_tree, accepted_pops):
             if parent.name in accepted_pops:
                 parent.set_style(nstyle3)
 
-    tree.render("Output_Topology.png", tree_style=ts)
+    tree.render(image_name, tree_style=ts)
+
+# visualize the output produced in the starting topology section
+def visualize_tree(input_tree, image_name = "tree.png"):
+    tree = Tree(input_tree)
+    tree.convert_to_ultrametric()
+    
+    # style sheet
+    nstyle = NodeStyle()
+    nstyle["size"] = 0
+    nstyle["hz_line_color"] = "Black"
+    nstyle["vt_line_color"] = "Black"
+    nstyle["vt_line_width"] = 2
+    nstyle["hz_line_width"] = 2
+    nstyle["hz_line_type"] = 0
+    nstyle["vt_line_type"] = 0
+    
+    # set basic style
+    for node in tree.traverse():
+        node.set_style(nstyle)
+
+    tree.render(image_name, tree_style=ts)
