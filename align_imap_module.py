@@ -290,9 +290,6 @@ def autoStartingTree(
         alignmentfile:      Phylip_MSA_file
                     ) ->    Tree_newick:
 
-    # this is set up to always produce consistent results from the starting tree inference
-    random.seed(123) 
-
     # associate all individuals with populations
     indpop_dict = Imap_to_IndPop_Dict(imapfile)
 
@@ -320,6 +317,7 @@ def autoStartingTree(
         pop_dict_at_locus = {seq_id: indpop_dict[seq_id] for seq_id in seq_ids_at_locus }
 
         # select one random individual from each population
+        random.seed(123)  # this is set up to always produce consistent results from the starting tree inference
         selected_ids = [random.choice(popmap_at_locus[key]) for key in popmap_at_locus]
 
         # create the alignment containing a sequence from the random individual
