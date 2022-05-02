@@ -188,7 +188,11 @@
 
 # from align_imap_module import autoStartingTree
 # print("HL")
-# print(autoStartingTree("Test_Data/D_HL_imap.txt", "Test_Data/D_HL_align.txt"))
+# print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
+# print("HL")
+# print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
+# print("HL")
+# print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
 # print("TMS")
 # print(autoStartingTree("Test_Data/D_TMS_imap.txt", "Test_Data/D_TMS_align.txt"))
 # print("ROT")
