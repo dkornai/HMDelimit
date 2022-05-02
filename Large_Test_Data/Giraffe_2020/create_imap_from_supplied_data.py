@@ -1,8 +1,15 @@
+'''
+This file is necessary to recreate an Imap file from the data available from
+https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0217956#sec025
+as the authors did not provide one.
+'''
+
 from helper_functions import alignfile_to_MSA
 from helper_functions import readLines
 from helper_functions import list_To_Imap
 
 gir = alignfile_to_MSA("BPP_Giraffa66.txt")
+print(len(gir))
 
 ind_ids = []
 for locus in gir:
