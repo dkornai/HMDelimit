@@ -17,7 +17,7 @@ MCF_param_dict =    {
 "Imapfile"      :"Imapfile", 
 "tree_start"    :"starting tree",
 "tree_HM"       :"HM guide tree",
-"execute_A11"   :"perform A11 delimitation",  
+"execute_A11"   :"execute_A11",  
 "ctl_file_phylo":"BPP A01 starting phylogeny inference",
 "ctl_file_delim":"BPP A11 starting delimitation",           
 "ctl_file_HM"   :"BPP A00 HM parameter inference",  
