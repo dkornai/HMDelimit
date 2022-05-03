@@ -308,7 +308,11 @@ def autoStartingTree(
         seq_ids_at_locus = [str(record.id).split("^")[1] for record in locus]
         
         # check if all the population are present at the locus, and ignore the locus if not
-        pops_at_locus = list(set([str(indpop_dict[indiv_id]) for indiv_id in seq_ids_at_locus]))
+        all_pops_at_locus = [str(indpop_dict[indiv_id]) for indiv_id in seq_ids_at_locus]
+        pops_at_locus = []
+        for pop in all_pops_at_locus:
+            if pop not in pops_at_locus:
+                pops_at_locus.append(pop)
         if len(pops_at_locus) < n_pop:
             continue
 

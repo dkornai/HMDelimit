@@ -193,6 +193,8 @@
 # print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
 # print("HL")
 # print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
+# print("fish")
+# print(autoStartingTree("Test_Data/Fish_2021/imap.txt", "Test_Data/Fish_2021/align_13.txt"))
 # print("TMS")
 # print(autoStartingTree("Test_Data/D_TMS_imap.txt", "Test_Data/D_TMS_align.txt"))
 # print("ROT")
