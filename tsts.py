@@ -176,7 +176,7 @@
 # print("L10")
 # print(autoPopParam("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
 
-#from align_imap_module import autoPrior
+# from align_imap_module import autoPrior
 # print("HL")
 # print(autoPrior("Test_Data/D_HL_imap.txt", "Test_Data/D_HL_align.txt"))
 # print("TMS")
@@ -184,13 +184,11 @@
 # print("ROT")
 # print(autoPrior("Test_Data/D_ROT_imap.txt", "Test_Data/D_ROT_align.txt"))
 # print("L10")
-# print(autoPrior("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
+# # print(autoPrior("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
+# print("snake")
+# print(autoPrior("Test_Data/Snakes_2019/imap.txt", "Test_Data/Snakes_2019/align_11.txt"))
 
 # from align_imap_module import autoStartingTree
-# print("HL")
-# print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
-# print("HL")
-# print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
 # print("HL")
 # print(autoStartingTree("Test_Data/HLizard_2009/D_HL_imap.txt", "Test_Data/HLizard_2009/D_HL_align.txt"))
 # print("fish")
@@ -201,6 +199,5 @@
 # print(autoStartingTree("Test_Data/D_ROT_imap.txt", "Test_Data/D_ROT_align.txt"))
 # print("L10")
 # print(autoStartingTree("Test_Data/D_L10_imap.txt", "Test_Data/D_L10_align.txt"))
-
-# from helper_functions import alignfile_to_MSA
-# print(alignfile_to_MSA("Test_Data/Snakes_2019/align_11.txt"))
+# print("snake")
+# print(autoStartingTree("Test_Data/Snakes_2019/imap.txt", "Test_Data/Snakes_2019/align_11.txt"))

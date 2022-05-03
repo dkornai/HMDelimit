@@ -29,6 +29,7 @@ with warnings.catch_warnings():
 from helper_functions import Imap_to_PopInd_Dict
 from helper_functions import Imap_to_IndPop_Dict
 from helper_functions import alignfile_to_MSA
+from helper_functions import flatten
 
 ## DATA DEPENDENCIES
 from data_dicts import distance_dict
@@ -65,13 +66,17 @@ def pairwise_dist   (
     seq_1_correct = set([i for i, x in enumerate(seq_1) if x in avail_chars])
     seq_2_correct = set([i for i, x in enumerate(seq_2) if x in avail_chars])
     overlap = list(seq_1_correct.intersection(seq_2_correct))
-    alignlist = [f"{seq_1[i]}{seq_2[i]}" for i in overlap]
-    
-    # at each site, use the lookup table to measure the distance
-    dist_persite = [distance_dict[pair] for pair in alignlist]
+    # check for edge case where '???' characters overlap throghout the alignment, leading to a zero length overlap of valid characters
+    if len(overlap) > 0:
+        alignlist = [f"{seq_1[i]}{seq_2[i]}" for i in overlap]
+        
+        # at each site, use the lookup table to measure the distance
+        dist_persite = [distance_dict[pair] for pair in alignlist]
 
-    return float(np.round(np.average(dist_persite), decimals = 4))
+        return float(np.round(np.average(dist_persite), decimals = 4))
 
+    else:
+        return np.nan
 
 # return a list of all paiwise distances in an alignment
 '''
@@ -235,11 +240,13 @@ def autoPrior   (
                 
                 # get avergage distance within the temp alignment
                 dist_list = get_Distance_list(temp_aligment)
-                avg_dist = np.average(dist_list)
-
-                # append to final list
-                per_locus_len.append(length)
-                per_locus_dist.append(avg_dist)
+                
+                # handle edge case with overlapping ???? nucleotides
+                if np.nan not in dist_list:
+                    avg_dist = np.average(dist_list)
+                    # append to final list
+                    per_locus_len.append(length)
+                    per_locus_dist.append(avg_dist)
         
         # calculate the locus length weigthed within population average
         if len(per_locus_dist) > 0:
@@ -256,8 +263,9 @@ def autoPrior   (
     max_dist = []
     for locus in alignment:
         dist_list = get_Distance_list(locus)
-        maxval = np.max(dist_list)
-        max_dist.append(maxval)
+        if np.nan not in dist_list:
+            maxval = np.max(dist_list)
+            max_dist.append(maxval)
 
     M = np.max(max_dist)
     tau_alpha = 3
@@ -337,6 +345,11 @@ def autoStartingTree(
 
         # infer tree using custom distance methods
         dm = get_DistanceMatrix(temp_align)
+        
+        # handle edge case with overlapping ???? nucleotides
+        if np.nan in flatten(dm): 
+            continue
+        
         constructor = DistanceTreeConstructor()
         tree = constructor.upgma(dm)
         tree_list.append(tree)
