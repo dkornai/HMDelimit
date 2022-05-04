@@ -284,8 +284,9 @@ def visualize_decision(proposed_tree, MSC_param, BPP_outfile, proposed_changes, 
     leaf_names = [node.name for node in tree.traverse() if node.is_leaf()]
     max_leaf_theta = 0
     for item in leaf_names:
-        if theta_dict[item] > max_leaf_theta:
-            max_leaf_theta = theta_dict[item]
+        if item in theta_dict:
+            if theta_dict[item] > max_leaf_theta:
+                max_leaf_theta = theta_dict[item]
 
     theta_mult = 50/max_leaf_theta # scale so that the largest theta corresponds to a radius of 50
 
