@@ -8,7 +8,7 @@ from helper_functions import alignfile_to_MSA
 from helper_functions import readLines
 from helper_functions import list_To_Imap
 
-gir = alignfile_to_MSA("Large_Test_Data/Giraffe_2020/BPP_Giraffa66.txt")
+gir = alignfile_to_MSA("Test_Data/Snakes_2019/align_11.txt")
 print(len(gir))
 
 ind_ids = []
@@ -20,7 +20,6 @@ ind_ids = list(set(ind_ids))
 ind_ids = [indid.split("^")[1] for indid in ind_ids]
 print(ind_ids)
 print(len(ind_ids), "\n")
-
 
 species_map = readLines("Large_Test_Data/Giraffe_2020/Input_STRUCTURE_noassignation.txt")
 species_map = species_map[1:]
