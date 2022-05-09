@@ -1,26 +1,35 @@
 
-from unittest import result
+## DEPENDENCIES
+import re
+import copy
+import os
+import random
+import shutil
+import multiprocessing as mp
+from itertools import combinations
+from itertools import repeat
+
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=SyntaxWarning)
     from ete3 import Tree
-
-from helper_functions import BPP_run, Imap_to_PopInd_Dict
-from helper_functions import extract_Speciestree
-from helper_functions import dict_to_bppcfile
-import copy
-import os
 import numpy as np
 import pandas as pd
-import multiprocessing as mp
-import random
-from itertools import combinations
-from itertools import repeat
+
+from helper_functions import BPP_run_capture
+from helper_functions import dict_to_bppcfile
+from helper_functions import BPP_summary
+from helper_functions import Imap_to_PopInd_Dict
+from helper_functions import BPP_resume_capture
+from helper_functions import path_filename
+
 from tree_helper_functions import name_Internal_nodes
 from tree_helper_functions import tree_To_Newick
+
+from data_dicts import clprnt
+
 from align_imap_module import autoPopParam, autoPrior
-import shutil
-from helper_functions import path_filename
+
 
 # generate a random starting newick tree
 def generate_random_tree(input_node_names):
@@ -45,7 +54,8 @@ def calculate_avg_rf(tree_list):
         rfdist.append(dist)
 
     return np.round(np.average(rfdist), decimals = 2)
-    
+
+iteration_size = 10000    
 
 std_cfile = {'seed': '-1',
              'outfile': 'out.txt', 
@@ -59,35 +69,73 @@ std_cfile = {'seed': '-1',
              'sampfreq': '1', 
             }
 
-
-def tree_iterate(intree_list, imapfile, seqfile, smpl_interval, iteration, priors, index):
+# perform the iterations from the burn in up to and including the first checkpoint
+def generate_tree_burinin(intree_list, imapfile, seqfile, smpl, priors, core_offset, index):
     pop_param = autoPopParam(imapfile, seqfile)
     cdict = copy.deepcopy(std_cfile)
-    cdict["nsample"] = smpl_interval
-    cdict["burnin"] = 0
+    cdict["nsample"] = smpl
+    cdict["burnin"] = iteration_size
     cdict["seqfile"] = f"../{seqfile}"
     cdict["imapfile"] = f"../{imapfile}"
-    cdict["threads"] = f"1 {int(index+1)}"
+    cdict["threads"] = f"2 {int(np.round(((index+0.5)*2), decimals = 2)+ core_offset )}"
     cdict['species&tree'] = pop_param["species&tree"]
     cdict['popsizes'] = pop_param["popsizes"]
     cdict["newick"] = intree_list[index]
     cdict['nloci'] = pop_param['nloci']
     cdict["thetaprior"] = priors['thetaprior']
     cdict["tauprior"] = priors['tauprior']
-    folder_name = f"smpl_{smpl_interval*iteration}_{index}.txt"
+    cdict["checkpoint"] = "10000 10000"
+    
+    folder_name = f"replicate_{index}"
     os.mkdir(folder_name)
     os.chdir(folder_name)
     dict_to_bppcfile(cdict, "bpp.ctl")
-    print(os.getcwd())
-    BPP_run("bpp.ctl")
-    output_tree = extract_Speciestree("bpp.ctl")
+    BPP_run_capture("bpp.ctl", index)
+    tree = get_topology_from_MCMC()
+    
     os.chdir("..")
     
-    return output_tree
+    return tree
 
+# collect the tree output of a bpp summary run
+def get_topology_from_MCMC():
+    full_out = BPP_summary("bpp.ctl")
+    lines = full_out.split("\n")
+    rowindex_tree = [i for i, s in enumerate(lines) if '(A)' in s][0]+1
+    tree = re.search("\(.+\);" , lines[rowindex_tree].split("  ")[-1]).group()
 
+    return tree
 
-def test_topology(imapfile, seqfile, working_dir, repeats, smpl_interval, max_sample):
+# iterate onwards from a checkpoint file and collect the next tree output
+def iterate_tree_from_chk(input_folder):
+    os.chdir(input_folder)
+    
+    ls = os.listdir()
+    chk_filenames = [file for file in ls if ".chk" in str(file)]
+    chk_maxval = max([int(filename.split(".")[-2]) for filename in chk_filenames])
+    chk_filename = f"out.txt.{chk_maxval}.chk"
+    
+    BPP_resume_capture(chk_filename, input_folder.split("_")[-1])
+    tree = get_topology_from_MCMC()
+    os.chdir("..")
+    
+    return tree
+
+# main function implementing the RF convergence testing
+def test_topology(imapfile, seqfile, working_dir, repeats, smpl, core_offset = 0):
+    # customized user feedback displayed in the terminal, and written to the output file
+    def tree_feedback(tree_array, rf_array, samples):
+        text = "\n"
+        text += f"Trees after {samples} samples\n"
+        for values in tree_array[-1]: text += f"{str(values)[1:-1]}\n"
+        text += f"Average pairwise rf: {rf_array[-1]}\n"
+        print(f"{clprnt.GREEN}", end = "\n")
+        print(text)
+        print(f"{clprnt.end}", end = "")
+
+        return text
+
+    # set up working directory
     parent_dir = os.getcwd()
     os.mkdir(working_dir)
     shutil.copy(src = seqfile,  dst = working_dir)
@@ -96,16 +144,17 @@ def test_topology(imapfile, seqfile, working_dir, repeats, smpl_interval, max_sa
     imapfile = path_filename(imapfile)
     seqfile = path_filename(seqfile)
 
-    r_smpl = []
-    r_sites = []
-    r_rf_s = []
-    r_rf_e = []
-    r_rf_r = []
+    # set up output files
+    with open("summary_tree_rf.csv","w") as summ_file:
+        summ_file.write("average rf, samples\n")
+    with open("detailed_tree_rf.txt","w") as summ_file:
+        summ_file.write("")
 
+    # set up commonly used priors
     node_names = list(Imap_to_PopInd_Dict(imapfile))
     priors = autoPrior(imapfile, seqfile)
 
-    # generate the random starting trees that are the starting point
+    # generate the random starting trees that are the starting point, and initiate the RF array
     strf = 0
     while strf < 0.1:
         starting_trees = []
@@ -114,72 +163,99 @@ def test_topology(imapfile, seqfile, working_dir, repeats, smpl_interval, max_sa
             starting_trees.append(generate_random_tree(node_names))
         strf = calculate_avg_rf(starting_trees)
     
-    print("@@@@@ STARTING TREES @@@@@@@")
-    for t in starting_trees: print(t)
-
-    # begin the tree array with the starting trees
+    rf_array = [strf]
     tree_array = []
     tree_array.append(starting_trees)
-    rf_array = [strf]
 
-    iteration = 1
-    while iteration*smpl_interval <= max_sample:
-        
-        # run the data generation in multithreaded mode
+    fb = tree_feedback(tree_array, rf_array, 0)
+    with open("summary_tree_rf.csv","a") as summ_file:
+        summ_file.write(f"{rf_array[-1]}, {0}\n")
+    with open("detailed_tree_rf.txt","a") as summ_file:
+        summ_file.write(fb)
+
+
+    tree_array
+    # run the first iteration to start
+    pool = mp.Pool(mp.cpu_count())
+    treeindex = list(range(repeats))
+    new_tree_list = pool.starmap(   generate_tree_burinin, 
+                                    zip(repeat(tree_array[-1]), 
+                                        repeat(imapfile), 
+                                        repeat(seqfile), 
+                                        repeat(smpl), 
+                                        repeat(priors),
+                                        repeat(core_offset), 
+                                        treeindex))
+    pool.close()
+
+    # collect the results
+    tree_array.append(new_tree_list)
+    rf_array.append(calculate_avg_rf(tree_array[-1]))
+    
+    fb = tree_feedback(tree_array, rf_array, iteration_size)
+    with open("summary_tree_rf.csv","a") as summ_file:
+        summ_file.write(f"{rf_array[-1]}, {iteration_size}\n")
+    with open("detailed_tree_rf.txt","a") as summ_file:
+        summ_file.write(fb)
+
+    
+    # run the subsequent resume iterations
+    iteration = 2
+    converged = False
+    folder_names = [f"replicate_{index}" for index in range(repeats)]
+
+    while iteration*iteration_size <= smpl and converged == False:
+        # run the multithreaded mode
         pool = mp.Pool(mp.cpu_count())
         treeindex = list(range(repeats))
+        new_tree_list = pool.starmap(iterate_tree_from_chk, zip(folder_names))
+        pool.close()
 
-        new_tree_list = pool.starmap(tree_iterate, zip(repeat(tree_array[-1]), 
-                                                       repeat(imapfile), 
-                                                       repeat(seqfile), 
-                                                       repeat(smpl_interval), 
-                                                       repeat(iteration),
-                                                       repeat(priors), treeindex))
-
-        pool.close()    
+        # collect the results
         tree_array.append(new_tree_list)
-        rf_array.append(calculate_avg_rf(new_tree_list))
-        print(f"@@@@@ TREES AFTER ITERATION {iteration} @@@@@@@")
-        for t in new_tree_list: print(t)
+        rf_array.append(calculate_avg_rf(tree_array[-1]))
+        fb = tree_feedback(tree_array, rf_array, iteration_size*iteration)
+
+        with open("summary_tree_rf.csv","a") as summ_file:
+            summ_file.write(f"{rf_array[-1]}, {iteration_size*iteration}\n")
+        with open("detailed_tree_rf.txt","a") as summ_file:
+            summ_file.write(fb)
+
+        # check if all of the trees have converged
+        if rf_array[-1] == 0:
+           converged = True 
+
         iteration += 1
-        print("RF:", rf_array[-1])
-            
-        # start_rf = calculate_avg_rf(starting_trees)
-        # end_rf = calculate_avg_rf(end_trees)
-        # rf_ratio = np.round(end_rf/start_rf, decimals = 2)
-
-        # r_smpl.append(sample)
-        # r_rf_s.append(start_rf)
-        # r_rf_e.append(end_rf)
-        # r_rf_r.append(rf_ratio)
-
    
-    results = pd.DataFrame({"rf":rf_array,})
-    results.to_csv(path_or_buf=f"results.csv", index=False)
+
     os.chdir(parent_dir)    
-    return rf_array, tree_array
 
-rf_vals, trees = test_topology("Test_Data/Snakes_2019/imap.txt",
-              "Test_Data/Snakes_2019/align_11.txt", 
-              "Test_Results/snk",
-              18, 10000, 250000)
+## EXAMPLE CALCULATIONS
 
-rf_vals, trees = test_topology("Test_Data/Fish_2021/imap.txt",
-              "Test_Data/Fish_2021/align_13.txt", 
-              "Test_Results/fsh",
-              18, 10000, 200000)
+# test_topology("Test_Data/Snakes_2019/imap.txt",
+#               "Test_Data/Snakes_2019/align_11.txt", 
+#               "Test_Results/snk",
+#               8, 10000, 250000)
 
-rf_vals, trees = test_topology("Test_Data/HLizard_2009/D_HL_imap.txt",
-              "Test_Data/HLizard_2009/D_HL_align.txt", 
-              "Test_Results/hliz",
-              18, 10000, 250000)
+# test_topology   (
+#     "Test_Data/Fish_2021/imap.txt",
+#     "Test_Data/Fish_2021/align_13.txt", 
+#     "Test_Results/fsh_topo",
+#     6, 100000, core_offset = 2
+#                 )
 
-rf_vals, trees = test_topology("Test_Data/Sarracenia_2013/imap.txt",
-              "Test_Data/Sarracenia_2013/align_a.txt", 
-              "Test_Results/sarr",
-              18, 10000, 250000)
+# test_topology("Test_Data/HLizard_2009/D_HL_imap.txt",
+#               "Test_Data/HLizard_2009/D_HL_align.txt", 
+#               "Test_Results/hliz16",
+#               8, 50000)
 
-rf_vals, trees = test_topology("Test_Data/TMS_2019/D_TMS_imap.txt",
-              "Test_Data/TMS_2019/D_TMS_align.txt", 
-              "Test_Results/tms",
-              18, 10000, 250000)
+
+# test_topology("Test_Data/Sarracenia_2013/imap.txt",
+#               "Test_Data/Sarracenia_2013/align_a.txt", 
+#               "Test_Results/sarr",
+#               16, 25000)
+
+# test_topology("Test_Data/TMS_2019/D_TMS_imap.txt",
+#               "Test_Data/TMS_2019/D_TMS_align.txt", 
+#               "Test_Results/tms_top",
+#               8, 20000)
