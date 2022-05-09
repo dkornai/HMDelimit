@@ -5,6 +5,7 @@ MANY OF THE FUNCTIONS RELATE TO I-O OPERATIONS.
 ## DEPENDENCIES 
 
 # STANDARD LIBRARY DEPENDENCIES
+from cgitb import text
 import subprocess
 import re
 import os
@@ -12,6 +13,13 @@ import copy
 import io
 import warnings
 import ntpath
+import psutil
+
+def kill(proc_pid):
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
 
 # EXTERNAL LIBRARY DEPENDENCIES
 import pandas as pd
@@ -478,6 +486,70 @@ def BPP_run (
     except:
         print(f"{clprnt.end}\n[X] ERROR: UNEXPECTED EXIT FROM BPP")
         exit()
+
+# run BPP with a given control file, and capture the stdout results
+def BPP_run_capture (
+        control_file:   BPP_control_file,
+        proc_id
+            ):
+
+    process = subprocess.Popen(f"bpp --cfile {control_file}", shell = True, bufsize = 1,
+                           stdout=subprocess.PIPE, stderr = subprocess.STDOUT,encoding='utf-8', errors = 'replace' ) 
+
+    extime = ""
+    while True:
+        realtime_output = process.stdout.readline()
+        if realtime_output == '' and process.poll() is not None:
+            break
+        if realtime_output:
+            text_out = f"{realtime_output}"
+            if "%" in text_out:
+                percent = text_out.split()[0]
+                if ":" in text_out.split()[-1]:
+                    extime = f"time {text_out.split()[-1]}        "
+                print("avg progress", percent, extime, end = '\r')
+            if "Writing checkpoint file out" in text_out:
+                print(text_out)
+                kill(process.pid)
+                
+
+# resume a BPP run from a checkpoint, and capture the stdout results
+def BPP_resume_capture (
+        chkpoint_file,
+        proc_id
+            ):
+
+    process = subprocess.Popen(f"bpp --resume {chkpoint_file}", shell = True, bufsize = 1,
+                           stdout=subprocess.PIPE, stderr = subprocess.STDOUT,encoding='utf-8', errors = 'replace' ) 
+
+    extime = ""
+    while True:
+        realtime_output = process.stdout.readline()
+        if realtime_output == '' and process.poll() is not None:
+            break
+        if realtime_output:
+            text_out = f"{realtime_output}"
+            if "%" in text_out:
+                percent = text_out.split()[0]
+                if ":" in text_out.split()[-1]:
+                    extime = f"time {text_out.split()[-1]}        "
+                print("avg progress", percent, extime, end = '\r')
+            # kill when checkpoint file is written
+            if "Writing checkpoint file out" in text_out:
+                print(text_out)
+                kill(process.pid)
+                
+
+# get the summary of a BPP run with a given control file
+def BPP_summary (
+        control_file:   BPP_control_file
+            ):
+
+    process = subprocess.run(["bpp", "--summary", control_file], stdout=subprocess.PIPE, encoding='utf-8')
+    out_text = process.stdout
+
+    return out_text
+
 
 # extract the most probable species tree from the "outfile" produced by BPP A01 or BPP A11
 def extract_Speciestree (
