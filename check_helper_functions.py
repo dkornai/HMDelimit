@@ -280,7 +280,7 @@ def check_Print(printparam):
     else:
         try:
             printsplit = printparam.split(" ")
-            if all(char == "0" or char == "1" for char in printsplit):
+            if printsplit[0] == "1" and all(char == "0" or char == "1" for char in printsplit):
                 printstate = 1
             else:
                 printstate = -1

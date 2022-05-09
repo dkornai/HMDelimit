@@ -19,6 +19,7 @@ from check_helper_functions import check_MSA_filetype
 # HELPER FUNCTIONS
 from helper_functions import pretty
 from helper_functions import stripall
+from helper_functions import path_filename
 
 ## TYPE HINTS
 from custom_types import Master_control_dict
@@ -32,13 +33,6 @@ from data_dicts import command_line_params
 
 
 ## SPECIALIZED HELPER FUNCTIONS
-
-# get just the filename part of a full file path
-def path_filename   (
-        path:               file_path
-                    ):
-    head, tail = ntpath.split(path)
-    return tail or ntpath.basename(head)
 
 ## GETTING PIPELINE ARGUMENTS FROM THE COMMAND LINE
 # read in the raw command line parameters, and ensure they are formatted correctly.

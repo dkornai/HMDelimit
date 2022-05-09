@@ -154,6 +154,13 @@ def overwrite_dict  (
 
 ## GENERAL FILE AND FOLDER I-O
 
+# get just the filename part of a full file path
+def path_filename   (
+        path:               file_path
+                    ):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
+
 # create a directory if it does not exist, and halt execution of the directory exists
 def create_TargetDir(
         target_dir_name:    file_path,
