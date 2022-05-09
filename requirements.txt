@@ -4,6 +4,7 @@ pandas
 biopython
 distinctipy
 ete3
+psutil
 # ete3 dependencies (not installed by pip)
 pyqt5
 lxml
