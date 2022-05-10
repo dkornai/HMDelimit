@@ -13,13 +13,13 @@ import shutil
 import multiprocessing as mp
 from itertools import combinations
 from itertools import repeat
+from collections import Counter
 
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=SyntaxWarning)
     from ete3 import Tree
 import numpy as np
-import pandas as pd
 
 from helper_functions import BPP_run_capture
 from helper_functions import dict_to_bppcfile
@@ -59,6 +59,10 @@ def calculate_avg_rf(tree_list):
         rfdist.append(dist)
 
     return np.round(np.average(rfdist), decimals = 2)
+
+def count_unique_topo(tree_list):
+    ocurrences = dict(Counter(tree_list))
+    return ocurrences
 
 iteration_size = 10000    
 
@@ -131,8 +135,11 @@ def test_topology(imapfile, seqfile, working_dir, repeats, smpl, burnin, core_of
     # customized user feedback displayed in the terminal, and written to the output file
     def tree_feedback(tree_array, rf_array, samples):
         text = "\n"
-        text += f"Trees after {samples} post burnin samples\n"
-        for values in tree_array[-1]: text += f"{str(values)[1:-1]}\n"
+        text += f"All trees after {samples} samples\n"
+        for tree in tree_array[-1]: text += f"{str(tree)[1:-1]}\n"
+        text += f"Unique trees and counts:\n"
+        uc = count_unique_topo(tree_array[-1])
+        for tree in uc: text += f"{uc[tree]} | {tree}\n"
         text += f"Average pairwise rf: {rf_array[-1]}\n"
         print(f"{clprnt.GREEN}", end = "\n")
         print(text)
@@ -172,9 +179,9 @@ def test_topology(imapfile, seqfile, working_dir, repeats, smpl, burnin, core_of
     tree_array = []
     tree_array.append(starting_trees)
 
-    fb = tree_feedback(tree_array, rf_array, 0)
+    fb = tree_feedback(tree_array, rf_array, -1*burnin)
     with open("summary_tree_rf.csv","a") as summ_file:
-        summ_file.write(f"{rf_array[-1]}, {0}\n")
+        summ_file.write(f"{rf_array[-1]}, {-1*burnin}\n")
     with open("detailed_tree_rf.txt","a") as summ_file:
         summ_file.write(fb)
 
@@ -238,11 +245,11 @@ def test_topology(imapfile, seqfile, working_dir, repeats, smpl, burnin, core_of
 
 ## EXAMPLE CALCULATIONS
 
-# test_topology   (
-#     imapfile="Test_Data/HLizard_2009/D_HL_imap.txt",
-#     seqfile="Test_Data/HLizard_2009/D_HL_align.txt", 
-#     working_dir="Test_Results/hliz_topo",
-#     repeats = 8, 
-#     smpl = 50000,
-#     burnin=20000
-#                 )
+test_topology   (
+    imapfile="Test_Data/HLizard_2009/D_HL_imap.txt",
+    seqfile="Test_Data/HLizard_2009/D_HL_align.txt", 
+    working_dir="Test_Results/hliz_topo",
+    repeats = 8, 
+    smpl = 50000,
+    burnin=20000
+                )
