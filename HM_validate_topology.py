@@ -243,13 +243,13 @@ def test_topology(imapfile, seqfile, working_dir, repeats, smpl, burnin, core_of
 
     os.chdir(parent_dir)    
 
-## EXAMPLE CALCULATIONS
+# ## EXAMPLE CALCULATIONS
 
-test_topology   (
-    imapfile="Test_Data/HLizard_2009/D_HL_imap.txt",
-    seqfile="Test_Data/HLizard_2009/D_HL_align.txt", 
-    working_dir="Test_Results/hliz_topo",
-    repeats = 8, 
-    smpl = 50000,
-    burnin=20000
-                )
+# test_topology   (
+#     imapfile="Test_Data/HLizard_2009/D_HL_imap.txt",
+#     seqfile="Test_Data/HLizard_2009/D_HL_align.txt", 
+#     working_dir="Test_Results/hliz_topo",
+#     repeats = 8, 
+#     smpl = 50000,
+#     burnin=20000
+#                 )
